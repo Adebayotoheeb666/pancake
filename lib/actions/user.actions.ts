@@ -148,7 +148,7 @@ export async function getLoggedInUser() {
 
 export const logoutAccount = async () => {
   try {
-    clearAuthCookies();
+    await clearAuthCookies();
     return true;
   } catch (error) {
     return null;
