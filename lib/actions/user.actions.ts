@@ -107,7 +107,7 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
     const { data: auth, error: signInErr } = await supabasePublic.auth.signInWithPassword({ email, password });
     if (signInErr || !auth.session || !auth.user) throw signInErr || new Error('Auth sign-in failed');
 
-    setAuthCookies(auth.session.access_token, auth.session.refresh_token, auth.user.id);
+    await setAuthCookies(auth.session.access_token, auth.session.refresh_token, auth.user.id);
 
     const user: User = {
       $id: newUserRow.id,
