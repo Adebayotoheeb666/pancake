@@ -7,7 +7,11 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true
   },
-  trustHost: true
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['localhost:3000', '*.fly.dev', '*.builder.codes']
+    }
+  }
 };
 
 export default withSentryConfig(nextConfig, {
