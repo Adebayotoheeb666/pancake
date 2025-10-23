@@ -50,7 +50,7 @@ export async function clearAuthCookies() {
   cookieStore.delete("sb-user-id");
 }
 
-export function getAuthUserIdFromCookies(): string | null {
-  const cookieStore = cookies();
+export async function getAuthUserIdFromCookies(): Promise<string | null> {
+  const cookieStore = await cookies();
   return cookieStore.get("sb-user-id")?.value ?? null;
 }
