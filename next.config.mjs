@@ -6,6 +6,9 @@ const nextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true
+  },
+  serverActions: {
+    allowedOrigins: ['localhost:3000', '*.fly.dev']
   }
 };
 
