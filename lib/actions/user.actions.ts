@@ -51,7 +51,7 @@ export const signIn = async ({ email, password }: signInProps) => {
     const { data: auth, error } = await supabasePublic.auth.signInWithPassword({ email, password });
     if (error || !auth.session || !auth.user) throw error || new Error('Invalid credentials');
 
-    setAuthCookies(auth.session.access_token, auth.session.refresh_token, auth.user.id);
+    await setAuthCookies(auth.session.access_token, auth.session.refresh_token, auth.user.id);
 
     const user = await getUserInfo({ userId: auth.user.id });
     return parseStringify(user);
