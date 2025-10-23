@@ -51,7 +51,7 @@ export const signIn = async ({ email, password }: signInProps) => {
     const { data: auth, error } = await supabasePublic.auth.signInWithPassword({ email, password });
     if (error || !auth.session || !auth.user) throw error || new Error('Invalid credentials');
 
-    setAuthCookies(auth.session.access_token, auth.session.refresh_token, auth.user.id);
+    await setAuthCookies(auth.session.access_token, auth.session.refresh_token, auth.user.id);
 
     const user = await getUserInfo({ userId: auth.user.id });
     return parseStringify(user);
@@ -107,7 +107,7 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
     const { data: auth, error: signInErr } = await supabasePublic.auth.signInWithPassword({ email, password });
     if (signInErr || !auth.session || !auth.user) throw signInErr || new Error('Auth sign-in failed');
 
-    setAuthCookies(auth.session.access_token, auth.session.refresh_token, auth.user.id);
+    await setAuthCookies(auth.session.access_token, auth.session.refresh_token, auth.user.id);
 
     const user: User = {
       $id: newUserRow.id,
@@ -135,7 +135,7 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
 
 export async function getLoggedInUser() {
   try {
-    const authUserId = getAuthUserIdFromCookies();
+    const authUserId = await getAuthUserIdFromCookies();
     if (!authUserId) return null;
 
     const user = await getUserInfo({ userId: authUserId });
@@ -148,7 +148,7 @@ export async function getLoggedInUser() {
 
 export const logoutAccount = async () => {
   try {
-    clearAuthCookies();
+    await clearAuthCookies();
     return true;
   } catch (error) {
     return null;

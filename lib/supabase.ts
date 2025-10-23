@@ -21,8 +21,8 @@ export const supabasePublic: SupabaseClient = createClient(
   }
 );
 
-export function setAuthCookies(access_token: string, refresh_token: string, user_id: string) {
-  const cookieStore = cookies();
+export async function setAuthCookies(access_token: string, refresh_token: string, user_id: string) {
+  const cookieStore = await cookies();
   cookieStore.set("sb-access-token", access_token, {
     path: "/",
     httpOnly: true,
@@ -43,14 +43,14 @@ export function setAuthCookies(access_token: string, refresh_token: string, user
   });
 }
 
-export function clearAuthCookies() {
-  const cookieStore = cookies();
+export async function clearAuthCookies() {
+  const cookieStore = await cookies();
   cookieStore.delete("sb-access-token");
   cookieStore.delete("sb-refresh-token");
   cookieStore.delete("sb-user-id");
 }
 
-export function getAuthUserIdFromCookies(): string | null {
-  const cookieStore = cookies();
+export async function getAuthUserIdFromCookies(): Promise<string | null> {
+  const cookieStore = await cookies();
   return cookieStore.get("sb-user-id")?.value ?? null;
 }
