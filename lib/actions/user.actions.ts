@@ -135,7 +135,7 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
 
 export async function getLoggedInUser() {
   try {
-    const authUserId = getAuthUserIdFromCookies();
+    const authUserId = await getAuthUserIdFromCookies();
     if (!authUserId) return null;
 
     const user = await getUserInfo({ userId: authUserId });
