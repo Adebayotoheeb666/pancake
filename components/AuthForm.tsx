@@ -35,6 +35,7 @@ const AuthForm = ({ type }: { type: string }) => {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [selectedCountry, setSelectedCountry] = useState<Country | undefined>();
   const [selectedProvider, setSelectedProvider] = useState<BankProvider | undefined>();
 
