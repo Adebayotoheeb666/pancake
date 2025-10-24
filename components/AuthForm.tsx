@@ -203,6 +203,12 @@ const AuthForm = ({ type }: { type: string }) => {
 
               <CustomInput control={form.control} name='password' label="Password" placeholder='Enter your password' />
 
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-14 text-red-700 font-medium">{error}</p>
+                </div>
+              )}
+
               <div className="flex flex-col gap-4">
                 <Button type="submit" disabled={isLoading} className="form-btn">
                   {isLoading ? (
