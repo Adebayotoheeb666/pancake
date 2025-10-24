@@ -167,13 +167,20 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
 
 export async function getLoggedInUser() {
   try {
+    console.log('[getLoggedInUser] Checking for auth cookies');
     const authUserId = await getAuthUserIdFromCookies();
-    if (!authUserId) return null;
+    console.log('[getLoggedInUser] Auth user ID from cookies:', authUserId ? 'found' : 'not found');
+
+    if (!authUserId) {
+      console.log('[getLoggedInUser] No auth user ID, returning null');
+      return null;
+    }
 
     const user = await getUserInfo({ userId: authUserId });
+    console.log('[getLoggedInUser] User info retrieved:', user ? user.email : 'null');
     return parseStringify(user);
   } catch (error) {
-    console.log(error);
+    console.error('[getLoggedInUser] Error:', error);
     return null;
   }
 }
