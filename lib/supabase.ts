@@ -66,5 +66,11 @@ export async function clearAuthCookies() {
 
 export async function getAuthUserIdFromCookies(): Promise<string | null> {
   const cookieStore = await cookies();
-  return cookieStore.get("sb-user-id")?.value ?? null;
+  const allCookies = cookieStore.getAll();
+  console.log('[getAuthUserIdFromCookies] All cookies available:', allCookies.map(c => c.name));
+
+  const userIdCookie = cookieStore.get("sb-user-id");
+  console.log('[getAuthUserIdFromCookies] sb-user-id cookie:', userIdCookie ? userIdCookie.value : 'not found');
+
+  return userIdCookie?.value ?? null;
 }
