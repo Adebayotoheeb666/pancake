@@ -78,43 +78,22 @@ const AuthForm = ({ type }: { type: string }) => {
             password: data.password
           }
 
-          const newUser = await signUp(userData);
-
-          if(!newUser) {
-            console.error('Sign up failed - no user returned');
-            setError('Failed to create account. Please try again.');
-            setIsLoading(false);
-            return;
-          }
-
-          console.log('Sign up successful, redirecting to dashboard');
-          setUser(newUser);
-          router.push('/');
+          console.log('Sign up with server-side redirect for email:', data.email);
+          await signUpAndRedirect(userData);
         }
 
         if(type === 'sign-in') {
-          console.log('Attempting sign-in for email:', data.email);
-          const response = await signIn({
+          console.log('Sign in with server-side redirect for email:', data.email);
+          await signInAndRedirect({
             email: data.email,
             password: data.password,
           })
-
-          if(!response) {
-            console.error('Sign in failed - no user returned');
-            setError('Invalid email or password. Please try again.');
-            setIsLoading(false);
-            return;
-          }
-
-          console.log('Sign in successful, redirecting to dashboard');
-          router.push('/')
         }
       } catch (error) {
         console.error('Form submission error:', error);
         const errorMessage = error instanceof Error ? error.message : 'An error occurred. Please try again.';
         console.error('Detailed error:', errorMessage);
         setError(errorMessage);
-      } finally {
         setIsLoading(false);
       }
     }
