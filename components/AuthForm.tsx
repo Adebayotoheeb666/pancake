@@ -81,31 +81,39 @@ const AuthForm = ({ type }: { type: string }) => {
           const newUser = await signUp(userData);
 
           if(!newUser) {
+            console.error('Sign up failed - no user returned');
             setError('Failed to create account. Please try again.');
             setIsLoading(false);
             return;
           }
 
+          console.log('Sign up successful, redirecting to dashboard');
           setUser(newUser);
+          router.push('/');
         }
 
         if(type === 'sign-in') {
+          console.log('Attempting sign-in for email:', data.email);
           const response = await signIn({
             email: data.email,
             password: data.password,
           })
 
           if(!response) {
+            console.error('Sign in failed - no user returned');
             setError('Invalid email or password. Please try again.');
             setIsLoading(false);
             return;
           }
 
+          console.log('Sign in successful, redirecting to dashboard');
           router.push('/')
         }
       } catch (error) {
         console.error('Form submission error:', error);
-        setError(error instanceof Error ? error.message : 'An error occurred. Please try again.');
+        const errorMessage = error instanceof Error ? error.message : 'An error occurred. Please try again.';
+        console.error('Detailed error:', errorMessage);
+        setError(errorMessage);
       } finally {
         setIsLoading(false);
       }
