@@ -109,7 +109,10 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
       .select("*")
       .single();
 
-    if (insertErr || !newUserRow) throw insertErr || new Error('Error creating user profile');
+    if (insertErr || !newUserRow) {
+      console.error('Profile insert error:', insertErr?.message || insertErr, 'Details:', insertErr);
+      throw insertErr || new Error('Error creating user profile');
+    }
 
     // Get session tokens
     const { data: auth, error: signInErr } = await supabasePublic.auth.signInWithPassword({ email, password });
