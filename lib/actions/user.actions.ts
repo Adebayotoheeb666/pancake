@@ -122,7 +122,7 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
     const user: User = {
       $id: newUserRow.id,
       email: newUserRow.email,
-      userId: created.user.id,
+      userId: authData.user.id,
       dwollaCustomerUrl,
       dwollaCustomerId,
       firstName,
