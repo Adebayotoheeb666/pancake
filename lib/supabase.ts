@@ -22,27 +22,36 @@ export const supabasePublic: SupabaseClient = createClient(
 );
 
 export async function setAuthCookies(access_token: string, refresh_token: string, user_id: string) {
-  const cookieStore = await cookies();
-  const isProduction = process.env.NODE_ENV === 'production';
+  try {
+    const cookieStore = await cookies();
+    const isProduction = process.env.NODE_ENV === 'production';
 
-  cookieStore.set("sb-access-token", access_token, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "strict",
-    secure: isProduction,
-  });
-  cookieStore.set("sb-refresh-token", refresh_token, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "strict",
-    secure: isProduction,
-  });
-  cookieStore.set("sb-user-id", user_id, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "strict",
-    secure: isProduction,
-  });
+    console.log('[setAuthCookies] Setting cookies for user:', user_id, 'secure:', isProduction);
+
+    cookieStore.set("sb-access-token", access_token, {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: isProduction,
+    });
+    cookieStore.set("sb-refresh-token", refresh_token, {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: isProduction,
+    });
+    cookieStore.set("sb-user-id", user_id, {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: isProduction,
+    });
+
+    console.log('[setAuthCookies] Cookies set successfully');
+  } catch (error) {
+    console.error('[setAuthCookies] Error setting cookies:', error);
+    throw error;
+  }
 }
 
 export async function clearAuthCookies() {
