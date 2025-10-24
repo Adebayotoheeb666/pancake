@@ -129,8 +129,39 @@ const AuthForm = ({ type }: { type: string }) => {
           </div>
       </header>
       {user ? (
-        <div className="flex flex-col gap-4">
-          <PlaidLink user={user} variant="primary" />
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4">
+            <CountryBankSelector
+              onCountrySelect={setSelectedCountry}
+              selectedCountry={selectedCountry}
+            />
+          </div>
+
+          {selectedCountry && (
+            <div className="flex flex-col gap-4">
+              <ProviderSelector
+                country={selectedCountry}
+                onProviderSelect={setSelectedProvider}
+                selectedProvider={selectedProvider}
+              />
+            </div>
+          )}
+
+          {selectedProvider === 'plaid' && (
+            <PlaidLink user={user} variant="primary" />
+          )}
+          {selectedProvider === 'flutterwave' && (
+            <FlutterwaveLink user={user} variant="primary" />
+          )}
+          {selectedProvider === 'paystack' && (
+            <PaystackLink user={user} variant="primary" />
+          )}
+          {selectedProvider === 'opay' && (
+            <OpayLink user={user} variant="primary" />
+          )}
+          {selectedProvider === 'monnify' && (
+            <MonnifyLink user={user} variant="primary" />
+          )}
         </div>
       ): (
         <>
