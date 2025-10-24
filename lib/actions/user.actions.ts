@@ -1,8 +1,6 @@
 "use server";
 
-"use server";
-
-import { revalidatePath } from "next/cache";
+import { revalidatePath, redirect } from "next/cache";
 import { CountryCode, ProcessorTokenCreateRequest, ProcessorTokenCreateRequestProcessorEnum, Products } from "plaid";
 
 import { plaidClient } from '@/lib/plaid';
