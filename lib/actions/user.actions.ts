@@ -72,7 +72,10 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
       email_confirm: true,
       user_metadata: { firstName, lastName },
     });
-    if (createErr || !created.user) throw createErr || new Error('Error creating user');
+    if (createErr || !created.user) {
+      console.error('Auth creation error:', createErr?.message || createErr);
+      throw createErr || new Error('Error creating user');
+    }
 
     const dwollaCustomerUrl = await createDwollaCustomer({
       ...userData,
