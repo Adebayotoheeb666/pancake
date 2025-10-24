@@ -24,11 +24,20 @@ import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getLoggedInUser, signIn, signUp } from '@/lib/actions/user.actions';
 import PlaidLink from './PlaidLink';
+import CountryBankSelector from './CountryBankSelector';
+import ProviderSelector from './ProviderSelector';
+import FlutterwaveLink from './FlutterwaveLink';
+import PaystackLink from './PaystackLink';
+import OpayLink from './OpayLink';
+import MonnifyLink from './MonnifyLink';
 
 const AuthForm = ({ type }: { type: string }) => {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState<Country | undefined>();
+  const [selectedProvider, setSelectedProvider] = useState<BankProvider | undefined>();
 
   const formSchema = authFormSchema(type);
 
@@ -52,10 +61,9 @@ const AuthForm = ({ type }: { type: string }) => {
     // 2. Define a submit handler.
     const onSubmit = async (data: z.infer<typeof formSchema>) => {
       setIsLoading(true);
+      setError('');
 
       try {
-        // Sign up with Appwrite & create plaid token
-        
         if(type === 'sign-up') {
           const userData = {
             firstName: data.firstName!,
@@ -72,6 +80,12 @@ const AuthForm = ({ type }: { type: string }) => {
 
           const newUser = await signUp(userData);
 
+          if(!newUser) {
+            setError('Failed to create account. Please try again.');
+            setIsLoading(false);
+            return;
+          }
+
           setUser(newUser);
         }
 
@@ -81,10 +95,17 @@ const AuthForm = ({ type }: { type: string }) => {
             password: data.password,
           })
 
-          if(response) router.push('/')
+          if(!response) {
+            setError('Invalid email or password. Please try again.');
+            setIsLoading(false);
+            return;
+          }
+
+          router.push('/')
         }
       } catch (error) {
-        console.log(error);
+        console.error('Form submission error:', error);
+        setError(error instanceof Error ? error.message : 'An error occurred. Please try again.');
       } finally {
         setIsLoading(false);
       }
@@ -121,8 +142,39 @@ const AuthForm = ({ type }: { type: string }) => {
           </div>
       </header>
       {user ? (
-        <div className="flex flex-col gap-4">
-          <PlaidLink user={user} variant="primary" />
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4">
+            <CountryBankSelector
+              onCountrySelect={setSelectedCountry}
+              selectedCountry={selectedCountry}
+            />
+          </div>
+
+          {selectedCountry && (
+            <div className="flex flex-col gap-4">
+              <ProviderSelector
+                country={selectedCountry}
+                onProviderSelect={setSelectedProvider}
+                selectedProvider={selectedProvider}
+              />
+            </div>
+          )}
+
+          {selectedProvider === 'plaid' && (
+            <PlaidLink user={user} variant="primary" />
+          )}
+          {selectedProvider === 'flutterwave' && (
+            <FlutterwaveLink user={user} variant="primary" />
+          )}
+          {selectedProvider === 'paystack' && (
+            <PaystackLink user={user} variant="primary" />
+          )}
+          {selectedProvider === 'opay' && (
+            <OpayLink user={user} variant="primary" />
+          )}
+          {selectedProvider === 'monnify' && (
+            <MonnifyLink user={user} variant="primary" />
+          )}
         </div>
       ): (
         <>
@@ -150,6 +202,12 @@ const AuthForm = ({ type }: { type: string }) => {
               <CustomInput control={form.control} name='email' label="Email" placeholder='Enter your email' />
 
               <CustomInput control={form.control} name='password' label="Password" placeholder='Enter your password' />
+
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-14 text-red-700 font-medium">{error}</p>
+                </div>
+              )}
 
               <div className="flex flex-col gap-4">
                 <Button type="submit" disabled={isLoading} className="form-btn">
