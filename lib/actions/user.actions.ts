@@ -54,9 +54,15 @@ export const signIn = async ({ email, password }: signInProps) => {
     await setAuthCookies(auth.session.access_token, auth.session.refresh_token, auth.user.id);
 
     const user = await getUserInfo({ userId: auth.user.id });
+
+    if (!user) {
+      console.error('User profile not found after authentication');
+      throw new Error('User profile not found. Please contact support.');
+    }
+
     return parseStringify(user);
   } catch (error) {
-    console.error('Error', error);
+    console.error('Sign in error:', error);
     return null;
   }
 }
