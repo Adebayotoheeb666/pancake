@@ -65,16 +65,21 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
   const { email, firstName, lastName } = userData;
 
   try {
-    // create supabase auth user (confirmed)
-    const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+    // Create auth user using public client (standard flow)
+    const { data: authData, error: authErr } = await supabasePublic.auth.signUpWithPassword({
       email,
       password,
-      email_confirm: true,
-      user_metadata: { firstName, lastName },
+      options: {
+        data: {
+          firstName,
+          lastName,
+        },
+      },
     });
-    if (createErr || !created.user) {
-      console.error('Auth creation error:', createErr?.message || createErr);
-      throw createErr || new Error('Error creating user');
+
+    if (authErr || !authData.user) {
+      console.error('Auth signup error:', authErr?.message || authErr);
+      throw authErr || new Error('Error creating user');
     }
 
     const dwollaCustomerUrl = await createDwollaCustomer({
@@ -84,11 +89,11 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
     if (!dwollaCustomerUrl) throw new Error('Error creating Dwolla customer');
     const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
 
-    // create profile row
+    // Create profile row
     const { data: newUserRow, error: insertErr } = await supabaseAdmin
       .from(USERS_TABLE)
       .insert({
-        auth_user_id: created.user.id,
+        auth_user_id: authData.user.id,
         email,
         first_name: firstName,
         last_name: lastName,
@@ -106,7 +111,7 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
 
     if (insertErr || !newUserRow) throw insertErr || new Error('Error creating user profile');
 
-    // sign in to get session tokens
+    // Get session tokens
     const { data: auth, error: signInErr } = await supabasePublic.auth.signInWithPassword({ email, password });
     if (signInErr || !auth.session || !auth.user) throw signInErr || new Error('Auth sign-in failed');
 
