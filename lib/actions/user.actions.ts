@@ -65,14 +65,21 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
   const { email, firstName, lastName } = userData;
 
   try {
-    // create supabase auth user (confirmed)
-    const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+    // Create auth user using admin client with confirmed email
+    const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: { firstName, lastName },
+      user_metadata: {
+        firstName,
+        lastName,
+      },
     });
-    if (createErr || !created.user) throw createErr || new Error('Error creating user');
+
+    if (authErr || !authData.user) {
+      console.error('Auth error:', authErr?.message || authErr);
+      throw authErr || new Error('Error creating auth user');
+    }
 
     const dwollaCustomerUrl = await createDwollaCustomer({
       ...userData,
@@ -81,11 +88,11 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
     if (!dwollaCustomerUrl) throw new Error('Error creating Dwolla customer');
     const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
 
-    // create profile row
+    // Create profile row
     const { data: newUserRow, error: insertErr } = await supabaseAdmin
       .from(USERS_TABLE)
       .insert({
-        auth_user_id: created.user.id,
+        auth_user_id: authData.user.id,
         email,
         first_name: firstName,
         last_name: lastName,
@@ -101,9 +108,12 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
       .select("*")
       .single();
 
-    if (insertErr || !newUserRow) throw insertErr || new Error('Error creating user profile');
+    if (insertErr || !newUserRow) {
+      console.error('Profile insert error:', insertErr?.message || insertErr);
+      throw insertErr || new Error('Error creating user profile');
+    }
 
-    // sign in to get session tokens
+    // Sign in to get session tokens
     const { data: auth, error: signInErr } = await supabasePublic.auth.signInWithPassword({ email, password });
     if (signInErr || !auth.session || !auth.user) throw signInErr || new Error('Auth sign-in failed');
 
@@ -112,7 +122,7 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
     const user: User = {
       $id: newUserRow.id,
       email: newUserRow.email,
-      userId: created.user.id,
+      userId: authData.user.id,
       dwollaCustomerUrl,
       dwollaCustomerId,
       firstName,
