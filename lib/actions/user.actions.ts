@@ -50,21 +50,35 @@ export const getUserInfo = async ({ userId }: getUserInfoProps) => {
 
 export const signIn = async ({ email, password }: signInProps) => {
   try {
+    console.log('[signIn] Starting sign-in for:', email);
     const { data: auth, error } = await supabasePublic.auth.signInWithPassword({ email, password });
-    if (error || !auth.session || !auth.user) throw error || new Error('Invalid credentials');
 
+    if (error) {
+      console.error('[signIn] Auth error:', error);
+      throw error;
+    }
+
+    if (!auth.session || !auth.user) {
+      console.error('[signIn] No session or user in auth response');
+      throw new Error('Invalid credentials');
+    }
+
+    console.log('[signIn] Auth successful, user ID:', auth.user.id);
     await setAuthCookies(auth.session.access_token, auth.session.refresh_token, auth.user.id);
+    console.log('[signIn] Cookies set');
 
     const user = await getUserInfo({ userId: auth.user.id });
+    console.log('[signIn] User info retrieved:', user ? 'yes' : 'no');
 
     if (!user) {
       console.error('User profile not found after authentication');
       throw new Error('User profile not found. Please contact support.');
     }
 
+    console.log('[signIn] Returning user:', user.email);
     return parseStringify(user);
   } catch (error) {
-    console.error('Sign in error:', error);
+    console.error('[signIn] Sign in error:', error);
     return null;
   }
 }
