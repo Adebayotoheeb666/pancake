@@ -61,10 +61,9 @@ const AuthForm = ({ type }: { type: string }) => {
     // 2. Define a submit handler.
     const onSubmit = async (data: z.infer<typeof formSchema>) => {
       setIsLoading(true);
+      setError('');
 
       try {
-        // Sign up with Appwrite & create plaid token
-        
         if(type === 'sign-up') {
           const userData = {
             firstName: data.firstName!,
@@ -81,6 +80,12 @@ const AuthForm = ({ type }: { type: string }) => {
 
           const newUser = await signUp(userData);
 
+          if(!newUser) {
+            setError('Failed to create account. Please try again.');
+            setIsLoading(false);
+            return;
+          }
+
           setUser(newUser);
         }
 
@@ -90,10 +95,17 @@ const AuthForm = ({ type }: { type: string }) => {
             password: data.password,
           })
 
-          if(response) router.push('/')
+          if(!response) {
+            setError('Invalid email or password. Please try again.');
+            setIsLoading(false);
+            return;
+          }
+
+          router.push('/')
         }
       } catch (error) {
-        console.log(error);
+        console.error('Form submission error:', error);
+        setError(error instanceof Error ? error.message : 'An error occurred. Please try again.');
       } finally {
         setIsLoading(false);
       }
