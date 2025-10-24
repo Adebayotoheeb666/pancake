@@ -66,7 +66,7 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
 
   try {
     // Create auth user using public client (standard flow)
-    const { data: authData, error: authErr } = await supabasePublic.auth.signUpWithPassword({
+    const { data: authData, error: authErr } = await supabasePublic.auth.signUp({
       email,
       password,
       options: {
