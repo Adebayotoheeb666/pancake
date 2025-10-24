@@ -328,3 +328,70 @@ declare interface getBankProps {
 declare interface getBankByAccountIdProps {
   accountId: string;
 }
+
+// Provider Types
+declare type BankProvider = "plaid" | "flutterwave" | "paystack" | "opay" | "monnify";
+
+declare type Country = "US" | "NG" | "GH" | "KE";
+
+declare interface CountryBankOption {
+  code: Country;
+  name: string;
+  currency: string;
+  providers: BankProvider[];
+}
+
+declare interface ProviderOption {
+  id: BankProvider;
+  name: string;
+  logo?: string;
+  description: string;
+  supported: boolean;
+}
+
+declare interface BankOption {
+  code: string;
+  name: string;
+}
+
+declare interface CountryBankSelectorProps {
+  onCountrySelect: (country: Country) => void;
+  selectedCountry?: Country;
+}
+
+declare interface ProviderSelectorProps {
+  country: Country;
+  onProviderSelect: (provider: BankProvider) => void;
+  selectedProvider?: BankProvider;
+}
+
+declare interface FlutterwaveLinkProps {
+  user: User;
+  variant?: "primary" | "ghost";
+}
+
+declare interface PaystackLinkProps {
+  user: User;
+  variant?: "primary" | "ghost";
+}
+
+declare interface OpayLinkProps {
+  user: User;
+  variant?: "primary" | "ghost";
+}
+
+declare interface MonnifyLinkProps {
+  user: User;
+  variant?: "primary" | "ghost";
+}
+
+declare interface LinkedAccount {
+  id: string;
+  provider: BankProvider;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  country: Country;
+  createdAt: string;
+  userId: string;
+}
