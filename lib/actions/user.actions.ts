@@ -16,13 +16,24 @@ const TRANSACTIONS_TABLE = "transactions"; // kept for reference across app
 
 export const getUserInfo = async ({ userId }: getUserInfoProps) => {
   try {
+    console.log('[getUserInfo] Fetching user profile for auth_user_id:', userId);
     const { data, error } = await supabaseAdmin
       .from(USERS_TABLE)
       .select("*")
       .eq("auth_user_id", userId)
       .single();
 
-    if (error || !data) return null;
+    if (error) {
+      console.error('[getUserInfo] Database error:', error);
+      return null;
+    }
+
+    if (!data) {
+      console.log('[getUserInfo] No user profile found in database');
+      return null;
+    }
+
+    console.log('[getUserInfo] User profile found:', data.email);
 
     const user = {
       $id: data.id,
