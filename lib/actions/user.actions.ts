@@ -65,21 +65,20 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
   const { email, firstName, lastName } = userData;
 
   try {
-    // Create auth user using public client (standard flow)
-    const { data: authData, error: authErr } = await supabasePublic.auth.signUp({
+    // Create auth user using admin client with confirmed email
+    const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      options: {
-        data: {
-          firstName,
-          lastName,
-        },
+      email_confirm: true,
+      user_metadata: {
+        firstName,
+        lastName,
       },
     });
 
     if (authErr || !authData.user) {
-      console.error('Auth signup error:', authErr?.message || authErr);
-      throw authErr || new Error('Error creating user');
+      console.error('Auth error:', authErr?.message || authErr);
+      throw authErr || new Error('Error creating auth user');
     }
 
     const dwollaCustomerUrl = await createDwollaCustomer({
@@ -110,11 +109,11 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
       .single();
 
     if (insertErr || !newUserRow) {
-      console.error('Profile insert error:', insertErr?.message || insertErr, 'Details:', insertErr);
+      console.error('Profile insert error:', insertErr?.message || insertErr);
       throw insertErr || new Error('Error creating user profile');
     }
 
-    // Get session tokens
+    // Sign in to get session tokens
     const { data: auth, error: signInErr } = await supabasePublic.auth.signInWithPassword({ email, password });
     if (signInErr || !auth.session || !auth.user) throw signInErr || new Error('Auth sign-in failed');
 
