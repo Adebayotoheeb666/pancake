@@ -24,11 +24,19 @@ import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getLoggedInUser, signIn, signUp } from '@/lib/actions/user.actions';
 import PlaidLink from './PlaidLink';
+import CountryBankSelector from './CountryBankSelector';
+import ProviderSelector from './ProviderSelector';
+import FlutterwaveLink from './FlutterwaveLink';
+import PaystackLink from './PaystackLink';
+import OpayLink from './OpayLink';
+import MonnifyLink from './MonnifyLink';
 
 const AuthForm = ({ type }: { type: string }) => {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<Country | undefined>();
+  const [selectedProvider, setSelectedProvider] = useState<BankProvider | undefined>();
 
   const formSchema = authFormSchema(type);
 
