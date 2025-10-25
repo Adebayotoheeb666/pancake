@@ -203,32 +203,6 @@ export const logoutAccount = async () => {
   }
 }
 
-export const signInAndRedirect = async ({ email, password }: signInProps) => {
-  try {
-    const user = await signIn({ email, password });
-    if (!user) {
-      throw new Error('Invalid email or password');
-    }
-    redirect('/');
-  } catch (error) {
-    console.error('[signInAndRedirect] Error:', error);
-    throw error;
-  }
-}
-
-export const signUpAndRedirect = async (userData: SignUpParams) => {
-  try {
-    const user = await signUp(userData);
-    if (!user) {
-      throw new Error('Failed to create account');
-    }
-    redirect('/');
-  } catch (error) {
-    console.error('[signUpAndRedirect] Error:', error);
-    throw error;
-  }
-}
-
 export const createLinkToken = async (user: User) => {
   try {
     const tokenParams = {
