@@ -23,7 +23,6 @@ import { authFormSchema } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getLoggedInUser, signUp } from '@/lib/actions/user.actions';
-import { serverSignIn, serverSignUp } from '@/lib/actions/auth.actions';
 import PlaidLink from './PlaidLink';
 import CountryBankSelector from './CountryBankSelector';
 import ProviderSelector from './ProviderSelector';
