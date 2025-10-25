@@ -22,7 +22,7 @@ import CustomInput from './CustomInput';
 import { authFormSchema } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getLoggedInUser, signIn, signUp } from '@/lib/actions/user.actions';
+import { getLoggedInUser, signUp } from '@/lib/actions/user.actions';
 import PlaidLink from './PlaidLink';
 import CountryBankSelector from './CountryBankSelector';
 import ProviderSelector from './ProviderSelector';
@@ -78,35 +78,82 @@ const AuthForm = ({ type }: { type: string }) => {
             password: data.password
           }
 
-          const newUser = await signUp(userData);
+          console.log('Sign up for email:', data.email);
+          try {
+            const response = await fetch('/api/auth/sign-up', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(userData),
+              credentials: 'include',
+            });
 
-          if(!newUser) {
-            setError('Failed to create account. Please try again.');
+            if (!response.ok) {
+              let errorData = { error: 'Failed to create account' };
+              try {
+                errorData = await response.json();
+              } catch (e) {
+                console.error('Failed to parse error response:', e);
+              }
+              console.error('Sign up failed:', errorData.error);
+              setError(errorData.error || 'Failed to create account. Please try again.');
+              setIsLoading(false);
+              return;
+            }
+
+            const result = await response.json();
+            console.log('Sign up successful, redirecting');
+            router.push(result.redirectTo || '/');
+          } catch (error) {
+            console.error('Sign up fetch error:', error);
+            setError('Network error. Please try again.');
             setIsLoading(false);
-            return;
           }
-
-          setUser(newUser);
         }
 
         if(type === 'sign-in') {
-          const response = await signIn({
-            email: data.email,
-            password: data.password,
-          })
+          console.log('Sign in request for email:', data.email);
+          try {
+            const response = await fetch('/api/auth/sign-in', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: data.email,
+                password: data.password,
+              }),
+              credentials: 'include',
+            });
 
-          if(!response) {
-            setError('Invalid email or password. Please try again.');
+            if (!response.ok) {
+              let errorData = { error: 'Invalid email or password' };
+              try {
+                errorData = await response.json();
+              } catch (e) {
+                console.error('Failed to parse error response:', e);
+              }
+              console.error('Sign in failed:', errorData.error);
+              setError(errorData.error || 'Invalid email or password. Please try again.');
+              setIsLoading(false);
+              return;
+            }
+
+            const result = await response.json();
+            console.log('Sign in successful, redirecting');
+            router.push(result.redirectTo || '/');
+          } catch (error) {
+            console.error('Sign in fetch error:', error);
+            setError('Network error. Please try again.');
             setIsLoading(false);
-            return;
           }
-
-          router.push('/')
         }
       } catch (error) {
         console.error('Form submission error:', error);
-        setError(error instanceof Error ? error.message : 'An error occurred. Please try again.');
-      } finally {
+        const errorMessage = error instanceof Error ? error.message : 'An error occurred. Please try again.';
+        console.error('Detailed error:', errorMessage);
+        setError(errorMessage);
         setIsLoading(false);
       }
     }

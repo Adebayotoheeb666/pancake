@@ -1,7 +1,5 @@
 "use server";
 
-"use server";
-
 import { revalidatePath } from "next/cache";
 import { CountryCode, ProcessorTokenCreateRequest, ProcessorTokenCreateRequestProcessorEnum, Products } from "plaid";
 
@@ -16,13 +14,24 @@ const TRANSACTIONS_TABLE = "transactions"; // kept for reference across app
 
 export const getUserInfo = async ({ userId }: getUserInfoProps) => {
   try {
+    console.log('[getUserInfo] Fetching user profile for auth_user_id:', userId);
     const { data, error } = await supabaseAdmin
       .from(USERS_TABLE)
       .select("*")
       .eq("auth_user_id", userId)
       .single();
 
-    if (error || !data) return null;
+    if (error) {
+      console.error('[getUserInfo] Database error:', error);
+      return null;
+    }
+
+    if (!data) {
+      console.log('[getUserInfo] No user profile found in database');
+      return null;
+    }
+
+    console.log('[getUserInfo] User profile found:', data.email);
 
     const user = {
       $id: data.id,
@@ -50,21 +59,35 @@ export const getUserInfo = async ({ userId }: getUserInfoProps) => {
 
 export const signIn = async ({ email, password }: signInProps) => {
   try {
+    console.log('[signIn] Starting sign-in for:', email);
     const { data: auth, error } = await supabasePublic.auth.signInWithPassword({ email, password });
-    if (error || !auth.session || !auth.user) throw error || new Error('Invalid credentials');
 
+    if (error) {
+      console.error('[signIn] Auth error:', error);
+      throw error;
+    }
+
+    if (!auth.session || !auth.user) {
+      console.error('[signIn] No session or user in auth response');
+      throw new Error('Invalid credentials');
+    }
+
+    console.log('[signIn] Auth successful, user ID:', auth.user.id);
     await setAuthCookies(auth.session.access_token, auth.session.refresh_token, auth.user.id);
+    console.log('[signIn] Cookies set');
 
     const user = await getUserInfo({ userId: auth.user.id });
+    console.log('[signIn] User info retrieved:', user ? 'yes' : 'no');
 
     if (!user) {
       console.error('User profile not found after authentication');
       throw new Error('User profile not found. Please contact support.');
     }
 
+    console.log('[signIn] Returning user:', user.email);
     return parseStringify(user);
   } catch (error) {
-    console.error('Sign in error:', error);
+    console.error('[signIn] Sign in error:', error);
     return null;
   }
 }
@@ -153,13 +176,20 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
 
 export async function getLoggedInUser() {
   try {
+    console.log('[getLoggedInUser] Checking for auth cookies');
     const authUserId = await getAuthUserIdFromCookies();
-    if (!authUserId) return null;
+    console.log('[getLoggedInUser] Auth user ID from cookies:', authUserId ? 'found' : 'not found');
+
+    if (!authUserId) {
+      console.log('[getLoggedInUser] No auth user ID, returning null');
+      return null;
+    }
 
     const user = await getUserInfo({ userId: authUserId });
+    console.log('[getLoggedInUser] User info retrieved:', user ? user.email : 'null');
     return parseStringify(user);
   } catch (error) {
-    console.log(error);
+    console.error('[getLoggedInUser] Error:', error);
     return null;
   }
 }

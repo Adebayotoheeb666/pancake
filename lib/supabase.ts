@@ -22,25 +22,39 @@ export const supabasePublic: SupabaseClient = createClient(
 );
 
 export async function setAuthCookies(access_token: string, refresh_token: string, user_id: string) {
-  const cookieStore = await cookies();
-  cookieStore.set("sb-access-token", access_token, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "strict",
-    secure: true,
-  });
-  cookieStore.set("sb-refresh-token", refresh_token, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "strict",
-    secure: true,
-  });
-  cookieStore.set("sb-user-id", user_id, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "strict",
-    secure: true,
-  });
+  try {
+    const cookieStore = await cookies();
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    console.log('[setAuthCookies] Setting cookies for user:', user_id, 'isProduction:', isProduction);
+
+    cookieStore.set("sb-access-token", access_token, {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: isProduction,
+      maxAge: 60 * 60 * 24 * 7,
+    });
+    cookieStore.set("sb-refresh-token", refresh_token, {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: isProduction,
+      maxAge: 60 * 60 * 24 * 7,
+    });
+    cookieStore.set("sb-user-id", user_id, {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: isProduction,
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    console.log('[setAuthCookies] Cookies configured in cookie store');
+  } catch (error) {
+    console.error('[setAuthCookies] Error setting cookies:', error);
+    throw error;
+  }
 }
 
 export async function clearAuthCookies() {
@@ -52,5 +66,11 @@ export async function clearAuthCookies() {
 
 export async function getAuthUserIdFromCookies(): Promise<string | null> {
   const cookieStore = await cookies();
-  return cookieStore.get("sb-user-id")?.value ?? null;
+  const allCookies = cookieStore.getAll();
+  console.log('[getAuthUserIdFromCookies] All cookies available:', allCookies.map(c => c.name));
+
+  const userIdCookie = cookieStore.get("sb-user-id");
+  console.log('[getAuthUserIdFromCookies] sb-user-id cookie:', userIdCookie ? userIdCookie.value : 'not found');
+
+  return userIdCookie?.value ?? null;
 }
