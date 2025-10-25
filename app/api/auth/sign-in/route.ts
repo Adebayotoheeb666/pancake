@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabasePublic } from '@/lib/supabase';
-
-function setCookieHeader(token: string, name: string, isProduction: boolean): string {
-  const maxAge = 60 * 60 * 24 * 7; // 7 days
-  let cookieString = `${name}=${encodeURIComponent(token)}`;
-  cookieString += `; Max-Age=${maxAge}`;
-  cookieString += '; Path=/';
-  cookieString += '; SameSite=Lax';
-  cookieString += '; HttpOnly';
-  if (isProduction) {
-    cookieString += '; Secure';
-  }
-  return cookieString;
-}
+import { getUserInfo } from '@/lib/actions/user.actions';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +8,7 @@ export async function POST(request: NextRequest) {
     const { email, password } = body;
 
     console.log('[API /auth/sign-in] Sign-in request for:', email);
-
+    
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
@@ -29,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: auth, error } = await supabasePublic.auth.signInWithPassword({ email, password });
-
+    
     if (error) {
       console.error('[API /auth/sign-in] Supabase auth error:', error.message);
       return NextResponse.json(
@@ -47,50 +35,42 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[API /auth/sign-in] Auth successful, user ID:', auth.user.id);
+    
+    // Verify user profile exists
+    const user = await getUserInfo({ userId: auth.user.id });
+    if (!user) {
+      console.error('[API /auth/sign-in] User profile not found');
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 401 }
+      );
+    }
 
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    // Create response
-    const response = NextResponse.json({
+    // Create response with proper Set-Cookie headers
+    const response = NextResponse.json({ 
       success: true,
+      user: user,
       redirectTo: '/'
     });
 
-    // Set cookies using both methods for reliability
-    const accessTokenCookie = setCookieHeader(auth.session.access_token, 'sb-access-token', isProduction);
-    const refreshTokenCookie = setCookieHeader(auth.session.refresh_token, 'sb-refresh-token', isProduction);
-    const userIdCookie = setCookieHeader(auth.user.id, 'sb-user-id', isProduction);
-
-    // Set via response headers (most reliable)
-    response.headers.append('Set-Cookie', accessTokenCookie);
-    response.headers.append('Set-Cookie', refreshTokenCookie);
-    response.headers.append('Set-Cookie', userIdCookie);
-
-    // Also set via cookies API for backup
-    response.cookies.set('sb-access-token', auth.session.access_token, {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const maxAge = 60 * 60 * 24 * 7; // 7 days
+    
+    // Set cookies using proper HTTP Set-Cookie format
+    const cookieOptions = {
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: 'lax' as const,
       secure: isProduction,
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: maxAge,
       path: '/',
-    });
-    response.cookies.set('sb-refresh-token', auth.session.refresh_token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: isProduction,
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-    });
-    response.cookies.set('sb-user-id', auth.user.id, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: isProduction,
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-    });
+    };
 
-    console.log('[API /auth/sign-in] Cookies set in response headers');
+    response.cookies.set('sb-access-token', auth.session.access_token, cookieOptions);
+    response.cookies.set('sb-refresh-token', auth.session.refresh_token, cookieOptions);
+    response.cookies.set('sb-user-id', auth.user.id, cookieOptions);
 
+    console.log('[API /auth/sign-in] Cookies set via NextResponse.cookies');
+    
     return response;
   } catch (error) {
     console.error('[API /auth/sign-in] Error:', error);
@@ -102,5 +82,5 @@ export async function POST(request: NextRequest) {
 }
 
 export async function OPTIONS(request: NextRequest) {
-  return NextResponse.json({}, { status: 200 });
+  return new NextResponse(null, { status: 200 });
 }
