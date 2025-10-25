@@ -80,57 +80,29 @@ const AuthForm = ({ type }: { type: string }) => {
           }
 
           console.log('Sign up for email:', data.email);
-          const newUser = await signUp(userData);
-
-          if(!newUser) {
-            console.error('Sign up failed - no user returned');
-            setError('Failed to create account. Please try again.');
-            setIsLoading(false);
-            return;
+          try {
+            await serverSignUp(userData);
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to create account';
+            if (!errorMessage.includes('NEXT_REDIRECT')) {
+              console.error('Sign up error:', error);
+              setError(errorMessage);
+              setIsLoading(false);
+            }
           }
-
-          console.log('Sign up successful, showing bank linking');
-          setUser(newUser);
         }
 
         if(type === 'sign-in') {
           console.log('Sign in request for email:', data.email);
           try {
-            const response = await fetch('/api/auth/sign-in', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                email: data.email,
-                password: data.password,
-              }),
-              credentials: 'include',
-            });
-
-            console.log('Sign in response status:', response.status);
-
-            if (!response.ok) {
-              let errorData;
-              try {
-                errorData = await response.json();
-              } catch {
-                errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
-              }
-              console.error('Sign in failed:', errorData.error);
-              setError(errorData.error || 'Invalid email or password. Please try again.');
+            await serverSignIn(data.email, data.password);
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
+            if (!errorMessage.includes('NEXT_REDIRECT')) {
+              console.error('Sign in error:', error);
+              setError(errorMessage);
               setIsLoading(false);
-              return;
             }
-
-            const data_ = await response.json();
-            console.log('Sign in successful, redirecting to dashboard');
-            router.push(data_.redirectTo || '/');
-          } catch (fetchError) {
-            console.error('Fetch error:', fetchError);
-            setError('Network error. Please check your connection and try again.');
-            setIsLoading(false);
-            return;
           }
         }
       } catch (error) {
