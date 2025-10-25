@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabasePublic } from '@/lib/supabase';
 
+function setCookieHeader(token: string, name: string, isProduction: boolean): string {
+  const maxAge = 60 * 60 * 24 * 7; // 7 days
+  const expires = new Date(Date.now() + maxAge * 1000).toUTCString();
+  const secure = isProduction ? 'Secure' : '';
+
+  return `${name}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; ${secure}`.trim();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -35,14 +43,25 @@ export async function POST(request: NextRequest) {
 
     console.log('[API /auth/sign-in] Auth successful, user ID:', auth.user.id);
 
-    // Create response with cookies
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // Create response
     const response = NextResponse.json({
       success: true,
       redirectTo: '/'
     });
 
-    // Set cookies directly on the response
-    const isProduction = process.env.NODE_ENV === 'production';
+    // Set cookies using both methods for reliability
+    const accessTokenCookie = setCookieHeader(auth.session.access_token, 'sb-access-token', isProduction);
+    const refreshTokenCookie = setCookieHeader(auth.session.refresh_token, 'sb-refresh-token', isProduction);
+    const userIdCookie = setCookieHeader(auth.user.id, 'sb-user-id', isProduction);
+
+    // Set via response headers (most reliable)
+    response.headers.append('Set-Cookie', accessTokenCookie);
+    response.headers.append('Set-Cookie', refreshTokenCookie);
+    response.headers.append('Set-Cookie', userIdCookie);
+
+    // Also set via cookies API for backup
     response.cookies.set('sb-access-token', auth.session.access_token, {
       httpOnly: true,
       sameSite: 'lax',
@@ -65,7 +84,7 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
 
-    console.log('[API /auth/sign-in] Cookies set in response');
+    console.log('[API /auth/sign-in] Cookies set in response headers');
 
     return response;
   } catch (error) {
