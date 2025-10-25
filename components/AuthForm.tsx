@@ -97,17 +97,40 @@ const AuthForm = ({ type }: { type: string }) => {
 
         if(type === 'sign-in') {
           console.log('Sign in request for email:', data.email);
-          const result = await serverSignIn(data.email, data.password);
+          try {
+            const response = await fetch('/api/auth/sign-in', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: data.email,
+                password: data.password,
+              }),
+              credentials: 'include',
+            });
 
-          if (!result.success) {
-            console.error('Sign in failed:', result.error);
-            setError(result.error || 'Invalid email or password. Please try again.');
+            if (!response.ok) {
+              let errorData = { error: 'Invalid email or password' };
+              try {
+                errorData = await response.json();
+              } catch (e) {
+                console.error('Failed to parse error response:', e);
+              }
+              console.error('Sign in failed:', errorData.error);
+              setError(errorData.error || 'Invalid email or password. Please try again.');
+              setIsLoading(false);
+              return;
+            }
+
+            const result = await response.json();
+            console.log('Sign in successful, redirecting');
+            router.push(result.redirectTo || '/');
+          } catch (error) {
+            console.error('Sign in fetch error:', error);
+            setError('Network error. Please try again.');
             setIsLoading(false);
-            return;
           }
-
-          console.log('Sign in successful, redirecting');
-          router.push(result.redirectTo || '/');
         }
       } catch (error) {
         console.error('Form submission error:', error);
