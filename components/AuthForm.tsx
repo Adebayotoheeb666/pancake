@@ -94,28 +94,43 @@ const AuthForm = ({ type }: { type: string }) => {
 
         if(type === 'sign-in') {
           console.log('Sign in request for email:', data.email);
-          const response = await fetch('/api/auth/sign-in', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: data.email,
-              password: data.password,
-            }),
-          });
+          try {
+            const response = await fetch('/api/auth/sign-in', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: data.email,
+                password: data.password,
+              }),
+              credentials: 'include',
+            });
 
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Sign in failed:', errorData.error);
-            setError(errorData.error || 'Invalid email or password. Please try again.');
+            console.log('Sign in response status:', response.status);
+
+            if (!response.ok) {
+              let errorData;
+              try {
+                errorData = await response.json();
+              } catch {
+                errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+              }
+              console.error('Sign in failed:', errorData.error);
+              setError(errorData.error || 'Invalid email or password. Please try again.');
+              setIsLoading(false);
+              return;
+            }
+
+            const data_ = await response.json();
+            console.log('Sign in successful, redirecting to dashboard');
+            router.push(data_.redirectTo || '/');
+          } catch (fetchError) {
+            console.error('Fetch error:', fetchError);
+            setError('Network error. Please check your connection and try again.');
             setIsLoading(false);
             return;
           }
-
-          const data_ = await response.json();
-          console.log('Sign in successful, redirecting to dashboard');
-          router.push(data_.redirectTo || '/');
         }
       } catch (error) {
         console.error('Form submission error:', error);
