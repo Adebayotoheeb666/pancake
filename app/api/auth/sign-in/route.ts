@@ -57,11 +57,11 @@ export async function POST(request: NextRequest) {
     const maxAge = 60 * 60 * 24 * 7; // 7 days
 
     // Manually set Set-Cookie headers instead of using response.cookies
-    const secureFlag = isProduction ? 'Secure;' : '';
+    const secureFlag = isProduction ? '; Secure' : '';
     const setCookieHeaders = [
-      `sb-access-token=${encodeURIComponent(auth.session.access_token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; ${secureFlag}`,
-      `sb-refresh-token=${encodeURIComponent(auth.session.refresh_token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; ${secureFlag}`,
-      `sb-user-id=${encodeURIComponent(auth.user.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; ${secureFlag}`,
+      `sb-access-token=${encodeURIComponent(auth.session.access_token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureFlag}`,
+      `sb-refresh-token=${encodeURIComponent(auth.session.refresh_token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureFlag}`,
+      `sb-user-id=${encodeURIComponent(auth.user.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureFlag}`,
     ];
 
     setCookieHeaders.forEach(cookie => {
