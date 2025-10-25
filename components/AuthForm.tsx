@@ -78,16 +78,44 @@ const AuthForm = ({ type }: { type: string }) => {
             password: data.password
           }
 
-          console.log('Sign up with server-side redirect for email:', data.email);
-          await signUpAndRedirect(userData);
+          console.log('Sign up for email:', data.email);
+          const newUser = await signUp(userData);
+
+          if(!newUser) {
+            console.error('Sign up failed - no user returned');
+            setError('Failed to create account. Please try again.');
+            setIsLoading(false);
+            return;
+          }
+
+          console.log('Sign up successful, showing bank linking');
+          setUser(newUser);
         }
 
         if(type === 'sign-in') {
-          console.log('Sign in with server-side redirect for email:', data.email);
-          await signInAndRedirect({
-            email: data.email,
-            password: data.password,
-          })
+          console.log('Sign in request for email:', data.email);
+          const response = await fetch('/api/auth/sign-in', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: data.email,
+              password: data.password,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Sign in failed:', errorData.error);
+            setError(errorData.error || 'Invalid email or password. Please try again.');
+            setIsLoading(false);
+            return;
+          }
+
+          const data_ = await response.json();
+          console.log('Sign in successful, redirecting to dashboard');
+          router.push(data_.redirectTo || '/');
         }
       } catch (error) {
         console.error('Form submission error:', error);
