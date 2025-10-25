@@ -3,10 +3,15 @@ import { supabasePublic } from '@/lib/supabase';
 
 function setCookieHeader(token: string, name: string, isProduction: boolean): string {
   const maxAge = 60 * 60 * 24 * 7; // 7 days
-  const expires = new Date(Date.now() + maxAge * 1000).toUTCString();
-  const secure = isProduction ? 'Secure' : '';
-
-  return `${name}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; ${secure}`.trim();
+  let cookieString = `${name}=${encodeURIComponent(token)}`;
+  cookieString += `; Max-Age=${maxAge}`;
+  cookieString += '; Path=/';
+  cookieString += '; SameSite=Lax';
+  cookieString += '; HttpOnly';
+  if (isProduction) {
+    cookieString += '; Secure';
+  }
+  return cookieString;
 }
 
 export async function POST(request: NextRequest) {
