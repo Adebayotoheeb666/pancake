@@ -80,30 +80,35 @@ const AuthForm = ({ type }: { type: string }) => {
           }
 
           console.log('Sign up for email:', data.email);
-          try {
-            await serverSignUp(userData);
-          } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Failed to create account';
-            if (!errorMessage.includes('NEXT_REDIRECT')) {
-              console.error('Sign up error:', error);
-              setError(errorMessage);
-              setIsLoading(false);
-            }
+          const result = await serverSignUp(userData);
+
+          if (!result.success) {
+            console.error('Sign up failed:', result.error);
+            setError(result.error || 'Failed to create account. Please try again.');
+            setIsLoading(false);
+            return;
           }
+
+          console.log('Sign up successful, redirecting');
+          if (result.user) {
+            setUser(result.user as any);
+          }
+          router.push(result.redirectTo || '/');
         }
 
         if(type === 'sign-in') {
           console.log('Sign in request for email:', data.email);
-          try {
-            await serverSignIn(data.email, data.password);
-          } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
-            if (!errorMessage.includes('NEXT_REDIRECT')) {
-              console.error('Sign in error:', error);
-              setError(errorMessage);
-              setIsLoading(false);
-            }
+          const result = await serverSignIn(data.email, data.password);
+
+          if (!result.success) {
+            console.error('Sign in failed:', result.error);
+            setError(result.error || 'Invalid email or password. Please try again.');
+            setIsLoading(false);
+            return;
           }
+
+          console.log('Sign in successful, redirecting');
+          router.push(result.redirectTo || '/');
         }
       } catch (error) {
         console.error('Form submission error:', error);
