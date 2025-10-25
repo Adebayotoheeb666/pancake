@@ -46,8 +46,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create response with proper Set-Cookie headers
-    const response = NextResponse.json({ 
+    // Create response
+    const response = NextResponse.json({
       success: true,
       user: user,
       redirectTo: '/'
@@ -55,21 +55,20 @@ export async function POST(request: NextRequest) {
 
     const isProduction = process.env.NODE_ENV === 'production';
     const maxAge = 60 * 60 * 24 * 7; // 7 days
-    
-    // Set cookies using proper HTTP Set-Cookie format
-    const cookieOptions = {
-      httpOnly: true,
-      sameSite: 'lax' as const,
-      secure: isProduction,
-      maxAge: maxAge,
-      path: '/',
-    };
 
-    response.cookies.set('sb-access-token', auth.session.access_token, cookieOptions);
-    response.cookies.set('sb-refresh-token', auth.session.refresh_token, cookieOptions);
-    response.cookies.set('sb-user-id', auth.user.id, cookieOptions);
+    // Manually set Set-Cookie headers instead of using response.cookies
+    const secureFla = isProduction ? 'Secure;' : '';
+    const setCookieHeaders = [
+      `sb-access-token=${encodeURIComponent(auth.session.access_token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; ${secureFla}`,
+      `sb-refresh-token=${encodeURIComponent(auth.session.refresh_token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; ${secureFla}`,
+      `sb-user-id=${encodeURIComponent(auth.user.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}; ${secureFla}`,
+    ];
 
-    console.log('[API /auth/sign-in] Cookies set via NextResponse.cookies');
+    setCookieHeaders.forEach(cookie => {
+      response.headers.append('Set-Cookie', cookie);
+    });
+
+    console.log('[API /auth/sign-in] Set-Cookie headers added');
     
     return response;
   } catch (error) {
