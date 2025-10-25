@@ -86,20 +86,20 @@ export async function POST(request: NextRequest) {
 
     const isProduction = process.env.NODE_ENV === 'production';
     const maxAge = 60 * 60 * 24 * 7; // 7 days
-    
-    const cookieOptions = {
-      httpOnly: true,
-      sameSite: 'lax' as const,
-      secure: isProduction,
-      maxAge: maxAge,
-      path: '/',
-    };
 
-    response.cookies.set('sb-access-token', signInAuth.session.access_token, cookieOptions);
-    response.cookies.set('sb-refresh-token', signInAuth.session.refresh_token, cookieOptions);
-    response.cookies.set('sb-user-id', auth.user.id, cookieOptions);
+    // Manually set Set-Cookie headers
+    const secureFlag = isProduction ? '; Secure' : '';
+    const setCookieHeaders = [
+      `sb-access-token=${signInAuth.session.access_token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureFlag}`,
+      `sb-refresh-token=${signInAuth.session.refresh_token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureFlag}`,
+      `sb-user-id=${auth.user.id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureFlag}`,
+    ];
 
-    console.log('[API /auth/sign-up] Cookies set, response sent');
+    setCookieHeaders.forEach(cookie => {
+      response.headers.append('Set-Cookie', cookie);
+    });
+
+    console.log('[API /auth/sign-up] Set-Cookie headers added');
     
     return response;
   } catch (error) {
