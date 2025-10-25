@@ -22,7 +22,7 @@ import CustomInput from './CustomInput';
 import { authFormSchema } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getLoggedInUser, signIn, signUp, signInAndRedirect, signUpAndRedirect } from '@/lib/actions/user.actions';
+import { getLoggedInUser, signUp } from '@/lib/actions/user.actions';
 import PlaidLink from './PlaidLink';
 import CountryBankSelector from './CountryBankSelector';
 import ProviderSelector from './ProviderSelector';
