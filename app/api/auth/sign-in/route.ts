@@ -59,9 +59,9 @@ export async function POST(request: NextRequest) {
     // Manually set Set-Cookie headers instead of using response.cookies
     const secureFlag = isProduction ? '; Secure' : '';
     const setCookieHeaders = [
-      `sb-access-token=${encodeURIComponent(auth.session.access_token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureFlag}`,
-      `sb-refresh-token=${encodeURIComponent(auth.session.refresh_token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureFlag}`,
-      `sb-user-id=${encodeURIComponent(auth.user.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureFlag}`,
+      `sb-access-token=${auth.session.access_token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureFlag}`,
+      `sb-refresh-token=${auth.session.refresh_token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureFlag}`,
+      `sb-user-id=${auth.user.id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secureFlag}`,
     ];
 
     setCookieHeaders.forEach(cookie => {
