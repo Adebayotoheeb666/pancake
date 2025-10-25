@@ -79,20 +79,37 @@ const AuthForm = ({ type }: { type: string }) => {
           }
 
           console.log('Sign up for email:', data.email);
-          const result = await serverSignUp(userData);
+          try {
+            const response = await fetch('/api/auth/sign-up', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(userData),
+              credentials: 'include',
+            });
 
-          if (!result.success) {
-            console.error('Sign up failed:', result.error);
-            setError(result.error || 'Failed to create account. Please try again.');
+            if (!response.ok) {
+              let errorData = { error: 'Failed to create account' };
+              try {
+                errorData = await response.json();
+              } catch (e) {
+                console.error('Failed to parse error response:', e);
+              }
+              console.error('Sign up failed:', errorData.error);
+              setError(errorData.error || 'Failed to create account. Please try again.');
+              setIsLoading(false);
+              return;
+            }
+
+            const result = await response.json();
+            console.log('Sign up successful, redirecting');
+            router.push(result.redirectTo || '/');
+          } catch (error) {
+            console.error('Sign up fetch error:', error);
+            setError('Network error. Please try again.');
             setIsLoading(false);
-            return;
           }
-
-          console.log('Sign up successful, redirecting');
-          if (result.user) {
-            setUser(result.user as any);
-          }
-          router.push(result.redirectTo || '/');
         }
 
         if(type === 'sign-in') {
