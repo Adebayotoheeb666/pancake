@@ -4,12 +4,22 @@ import { getUserInfo } from '@/lib/actions/user.actions';
 import { withRateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
 async function handleSignIn(request: NextRequest) {
+  let body;
   try {
-    const body = await request.json();
+    body = await request.json();
+  } catch (parseError) {
+    console.error('[API /auth/sign-in] Failed to parse request body:', parseError);
+    return NextResponse.json(
+      { error: 'Invalid request body' },
+      { status: 400 }
+    );
+  }
+
+  try {
     const { email, password } = body;
 
     console.log('[API /auth/sign-in] Sign-in request for:', email);
-    
+
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
