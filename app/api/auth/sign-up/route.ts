@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     console.log('[API /auth/sign-up] Sign-up request for:', email);
     
     // Create auth user
-    const { data: auth, error: authError } = await supabasePublic.auth.signUpWithPassword({
+    const { data: auth, error: authError } = await supabasePublic.auth.signUp({
       email,
       password,
     });
