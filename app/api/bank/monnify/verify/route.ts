@@ -56,3 +56,15 @@ async function handleVerify(request: NextRequest) {
     );
   }
 }
+
+export async function POST(request: NextRequest) {
+  return withRateLimit(
+    request,
+    () => handleVerify(request),
+    {
+      limit: 10,
+      windowMs: 60 * 60 * 1000,
+      keyGenerator: (req) => `monnify-verify:${getRateLimitKey(req, '')}`,
+    }
+  );
+}
