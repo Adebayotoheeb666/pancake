@@ -185,9 +185,26 @@ export async function getLoggedInUser() {
       return null;
     }
 
-    const user = await getUserInfo({ userId: authUserId });
-    console.log('[getLoggedInUser] User info retrieved:', user ? user.email : 'null');
-    return parseStringify(user);
+    try {
+      const user = await getUserInfo({ userId: authUserId });
+      console.log('[getLoggedInUser] User info retrieved:', user ? user.email : 'null');
+      return parseStringify(user);
+    } catch (error) {
+      console.error('[getLoggedInUser] Error getting user info:', error);
+
+      // Attempt to refresh session if token might be expired
+      console.log('[getLoggedInUser] Attempting to refresh session');
+      const refreshed = await refreshAuthSession();
+
+      if (refreshed) {
+        console.log('[getLoggedInUser] Session refreshed, retrying getUserInfo');
+        const user = await getUserInfo({ userId: authUserId });
+        console.log('[getLoggedInUser] User info retrieved after refresh:', user ? user.email : 'null');
+        return parseStringify(user);
+      }
+
+      return null;
+    }
   } catch (error) {
     console.error('[getLoggedInUser] Error:', error);
     return null;
