@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabasePublic } from '@/lib/supabase';
 import { getUserInfo } from '@/lib/actions/user.actions';
+import { withRateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
-export async function POST(request: NextRequest) {
+async function handleSignIn(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, password } = body;
