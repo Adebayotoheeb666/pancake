@@ -39,6 +39,18 @@ async function handleLogout(request: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  return withRateLimit(
+    request,
+    () => handleLogout(request),
+    {
+      limit: 10, // 10 logout attempts
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      keyGenerator: (req) => `logout:${getRateLimitKey(req, '')}`,
+    }
+  );
+}
+
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, { status: 200 });
 }
