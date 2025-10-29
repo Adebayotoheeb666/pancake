@@ -81,6 +81,18 @@ async function handleSignIn(request: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  return withRateLimit(
+    request,
+    () => handleSignIn(request),
+    {
+      limit: 5, // 5 attempts
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      keyGenerator: (req) => `sign-in:${getRateLimitKey(req, '')}`,
+    }
+  );
+}
+
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, { status: 200 });
 }
