@@ -93,12 +93,17 @@ const AuthForm = ({ type }: { type: string }) => {
             let errorMessage = 'Failed to create account. Please try again.';
 
             try {
-              const responseText = await response.text();
-              if (responseText) {
-                responseData = JSON.parse(responseText);
+              const contentType = response.headers.get('content-type');
+              if (contentType && contentType.includes('application/json')) {
+                responseData = await response.json();
+              } else {
+                const responseText = await response.text();
+                if (responseText) {
+                  responseData = JSON.parse(responseText);
+                }
               }
-            } catch (e) {
-              console.error('Failed to parse response:', e);
+            } catch (parseError) {
+              console.error('Failed to parse response:', parseError);
             }
 
             if (!response.ok) {
