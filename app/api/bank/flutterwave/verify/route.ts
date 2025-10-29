@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFlutterwaveAccount } from '@/lib/actions/flutterwave.actions';
 import { supabaseAdmin } from '@/lib/supabase';
+import { withRateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
 const LINKED_ACCOUNTS_TABLE = 'linked_accounts';
 
-export async function POST(request: NextRequest) {
+async function handleVerify(request: NextRequest) {
   try {
     const { accountNumber, bankCode, userId } = await request.json();
 
