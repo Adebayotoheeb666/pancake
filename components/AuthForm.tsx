@@ -90,14 +90,18 @@ const AuthForm = ({ type }: { type: string }) => {
             });
 
             if (!response.ok) {
-              let errorData = { error: 'Failed to create account' };
+              let errorMessage = 'Failed to create account. Please try again.';
               try {
-                errorData = await response.json();
+                const responseText = await response.text();
+                if (responseText) {
+                  const errorData = JSON.parse(responseText);
+                  errorMessage = errorData.error || errorMessage;
+                }
               } catch (e) {
                 console.error('Failed to parse error response:', e);
               }
-              console.error('Sign up failed:', errorData.error);
-              setError(errorData.error || 'Failed to create account. Please try again.');
+              console.error('Sign up failed:', errorMessage);
+              setError(errorMessage);
               setIsLoading(false);
               return;
             }
