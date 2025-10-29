@@ -143,3 +143,15 @@ async function handleTransfer(request: NextRequest) {
     );
   }
 }
+
+export async function POST(request: NextRequest) {
+  return withRateLimit(
+    request,
+    () => handleTransfer(request),
+    {
+      limit: 5, // 5 transfer attempts per user
+      windowMs: 60 * 60 * 1000, // 1 hour
+      keyGenerator: (req) => `transfer:${getRateLimitKey(req, '')}`,
+    }
+  );
+}
