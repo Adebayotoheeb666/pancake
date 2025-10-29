@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabasePublic, supabaseAdmin } from '@/lib/supabase';
+import { withRateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
 const USERS_TABLE = 'users';
 
-export async function POST(request: NextRequest) {
+async function handleSignUp(request: NextRequest) {
   try {
     const body = await request.json();
     const { firstName, lastName, address1, city, state, postalCode, dateOfBirth, ssn, email, password } = body;
