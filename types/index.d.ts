@@ -254,6 +254,7 @@ declare interface DoughnutChartProps {
 
 declare interface PaymentTransferFormProps {
   accounts: Account[];
+  userId?: string;
 }
 
 // Actions
