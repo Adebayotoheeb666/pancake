@@ -213,10 +213,27 @@ export async function getLoggedInUser() {
 
 export const logoutAccount = async () => {
   try {
-    await clearAuthCookies();
+    console.log('[logoutAccount] Starting logout');
+
+    // Call the logout API endpoint
+    const response = await fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      console.error('[logoutAccount] Logout API failed:', response.status);
+      return false;
+    }
+
+    console.log('[logoutAccount] Logout successful');
     return true;
   } catch (error) {
-    return null;
+    console.error('[logoutAccount] Error:', error);
+    return false;
   }
 }
 
