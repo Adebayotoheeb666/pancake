@@ -9,11 +9,12 @@ export async function POST(request: NextRequest) {
     const { firstName, lastName, address1, city, state, postalCode, dateOfBirth, ssn, email, password } = body;
 
     console.log('[API /auth/sign-up] Sign-up request for:', email);
-    
-    // Create auth user
-    const { data: auth, error: authError } = await supabasePublic.auth.signUpWithPassword({
+
+    // Create auth user using admin client with email confirmed
+    const { data: auth, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
+      email_confirm: true,
     });
 
     if (authError || !auth.user) {
@@ -32,18 +33,15 @@ export async function POST(request: NextRequest) {
       .insert([
         {
           auth_user_id: auth.user.id,
-          firstName,
-          lastName,
+          first_name: firstName,
+          last_name: lastName,
           address1,
           city,
           state,
-          postalCode,
-          dateOfBirth,
+          postal_code: postalCode,
+          date_of_birth: dateOfBirth,
           ssn,
           email,
-          dwollaCustomerId: '',
-          dwollaFundingId: '',
-          appwriteItemId: '',
         },
       ])
       .select()

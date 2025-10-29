@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
         provider: 'monnify',
         bank_name: 'Monnify Bank',
         account_number: accountNumber,
+        bank_code: bankCode,
         account_name: accountData.accountName,
         country: 'NG',
       })

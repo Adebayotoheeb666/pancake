@@ -9,7 +9,7 @@ const TRANSACTIONS_TABLE = "transactions";
 
 export const createTransaction = async (transaction: CreateTransactionProps) => {
   try {
-    const payload = {
+    const payload: any = {
       channel: 'online',
       category: 'Transfer',
       name: transaction.name,
@@ -20,6 +20,14 @@ export const createTransaction = async (transaction: CreateTransactionProps) => 
       receiver_bank_id: transaction.receiverBankId,
       email: transaction.email,
     };
+
+    // Add provider and transfer reference if available
+    if (transaction.provider) {
+      payload.provider = transaction.provider;
+    }
+    if (transaction.transfer_reference) {
+      payload.transfer_reference = transaction.transfer_reference;
+    }
 
     const { data, error } = await supabaseAdmin
       .from(TRANSACTIONS_TABLE)
@@ -39,6 +47,8 @@ export const createTransaction = async (transaction: CreateTransactionProps) => 
       senderBankId: data.sender_bank_id,
       receiverBankId: data.receiver_bank_id,
       email: data.email,
+      provider: data.provider,
+      transfer_reference: data.transfer_reference,
     } as unknown as Transaction;
 
     return parseStringify(mapped);

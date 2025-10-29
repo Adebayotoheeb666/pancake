@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
         provider: 'flutterwave',
         bank_name: 'Flutterwave Bank',
         account_number: accountNumber,
+        bank_code: bankCode,
         account_name: accountData.accountName,
         country: 'NG',
       })
