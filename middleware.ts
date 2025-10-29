@@ -7,13 +7,15 @@ export function middleware(request: NextRequest) {
   // Check if user has auth cookies
   const authUserIdCookie = request.cookies.get('sb-user-id');
 
-  // Protected routes that require authentication
-  const protectedRoutes = ['/', '/my-banks', '/payment-transfer', '/transaction-history'];
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-
   // Auth routes that should redirect to home if already logged in
   const authRoutes = ['/sign-in', '/sign-up'];
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
+
+  // Protected routes that require authentication (check these AFTER auth routes to avoid conflicts)
+  const protectedRoutes = ['/', '/my-banks', '/payment-transfer', '/transaction-history'];
+  const isProtectedRoute = !isAuthRoute && protectedRoutes.some(route =>
+    pathname === route || pathname.startsWith(route + '/')
+  );
 
   // If trying to access protected route without auth, redirect to sign-in
   if (isProtectedRoute && !authUserIdCookie) {
