@@ -9,11 +9,12 @@ export async function POST(request: NextRequest) {
     const { firstName, lastName, address1, city, state, postalCode, dateOfBirth, ssn, email, password } = body;
 
     console.log('[API /auth/sign-up] Sign-up request for:', email);
-    
-    // Create auth user
-    const { data: auth, error: authError } = await supabasePublic.auth.signUp({
+
+    // Create auth user using admin client with email confirmed
+    const { data: auth, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
+      email_confirm: true,
     });
 
     if (authError || !auth.user) {
