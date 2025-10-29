@@ -74,3 +74,46 @@ export async function getAuthUserIdFromCookies(): Promise<string | null> {
 
   return userIdCookie?.value ?? null;
 }
+
+export async function getAuthTokens(): Promise<{ accessToken: string | null; refreshToken: string | null }> {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get("sb-access-token")?.value ?? null;
+  const refreshToken = cookieStore.get("sb-refresh-token")?.value ?? null;
+
+  return { accessToken, refreshToken };
+}
+
+export async function refreshAuthSession(): Promise<boolean> {
+  try {
+    const cookieStore = await cookies();
+    const refreshToken = cookieStore.get("sb-refresh-token")?.value;
+
+    if (!refreshToken) {
+      console.log('[refreshAuthSession] No refresh token available');
+      return false;
+    }
+
+    console.log('[refreshAuthSession] Attempting to refresh session');
+    const { data, error } = await supabasePublic.auth.refreshSession({
+      refresh_token: refreshToken,
+    });
+
+    if (error || !data.session) {
+      console.error('[refreshAuthSession] Refresh failed:', error?.message);
+      await clearAuthCookies();
+      return false;
+    }
+
+    console.log('[refreshAuthSession] Session refreshed successfully');
+    await setAuthCookies(
+      data.session.access_token,
+      data.session.refresh_token,
+      data.session.user.id
+    );
+
+    return true;
+  } catch (error) {
+    console.error('[refreshAuthSession] Error:', error);
+    return false;
+  }
+}

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabasePublic, supabaseAdmin } from '@/lib/supabase';
+import { withRateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
 const USERS_TABLE = 'users';
 
-export async function POST(request: NextRequest) {
+async function handleSignUp(request: NextRequest) {
   try {
     const body = await request.json();
     const { firstName, lastName, address1, city, state, postalCode, dateOfBirth, ssn, email, password } = body;
@@ -107,6 +108,18 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: NextRequest) {
+  return withRateLimit(
+    request,
+    () => handleSignUp(request),
+    {
+      limit: 3, // 3 attempts
+      windowMs: 60 * 60 * 1000, // 1 hour
+      keyGenerator: (req) => `sign-up:${getRateLimitKey(req, '')}`,
+    }
+  );
 }
 
 export async function OPTIONS(request: NextRequest) {

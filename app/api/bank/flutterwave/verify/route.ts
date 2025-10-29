@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFlutterwaveAccount } from '@/lib/actions/flutterwave.actions';
 import { supabaseAdmin } from '@/lib/supabase';
+import { withRateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
 const LINKED_ACCOUNTS_TABLE = 'linked_accounts';
 
-export async function POST(request: NextRequest) {
+async function handleVerify(request: NextRequest) {
   try {
     const { accountNumber, bankCode, userId } = await request.json();
 
@@ -54,4 +55,16 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: NextRequest) {
+  return withRateLimit(
+    request,
+    () => handleVerify(request),
+    {
+      limit: 10,
+      windowMs: 60 * 60 * 1000,
+      keyGenerator: (req) => `flutterwave-verify:${getRateLimitKey(req, '')}`,
+    }
+  );
 }

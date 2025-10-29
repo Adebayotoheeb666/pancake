@@ -4,8 +4,9 @@ import { createTransfer } from '@/lib/actions/dwolla.actions';
 import { createTransaction } from '@/lib/actions/transaction.actions';
 import { getBank, getBankByAccountId } from '@/lib/actions/user.actions';
 import { supabaseAdmin } from '@/lib/supabase';
+import { withRateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
-export async function POST(request: NextRequest) {
+async function handleTransfer(request: NextRequest) {
   try {
     const body = await request.json();
     const {
@@ -141,4 +142,16 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: NextRequest) {
+  return withRateLimit(
+    request,
+    () => handleTransfer(request),
+    {
+      limit: 5, // 5 transfer attempts per user
+      windowMs: 60 * 60 * 1000, // 1 hour
+      keyGenerator: (req) => `transfer:${getRateLimitKey(req, '')}`,
+    }
+  );
 }

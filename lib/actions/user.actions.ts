@@ -6,7 +6,7 @@ import { CountryCode, ProcessorTokenCreateRequest, ProcessorTokenCreateRequestPr
 import { plaidClient } from '@/lib/plaid';
 import { encryptId, extractCustomerIdFromUrl, parseStringify } from "../utils";
 import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
-import { supabaseAdmin, supabasePublic, setAuthCookies, clearAuthCookies, getAuthUserIdFromCookies } from "../supabase";
+import { supabaseAdmin, supabasePublic, setAuthCookies, clearAuthCookies, getAuthUserIdFromCookies, refreshAuthSession } from "../supabase";
 
 const USERS_TABLE = "users";
 const BANKS_TABLE = "banks";
@@ -185,9 +185,26 @@ export async function getLoggedInUser() {
       return null;
     }
 
-    const user = await getUserInfo({ userId: authUserId });
-    console.log('[getLoggedInUser] User info retrieved:', user ? user.email : 'null');
-    return parseStringify(user);
+    try {
+      const user = await getUserInfo({ userId: authUserId });
+      console.log('[getLoggedInUser] User info retrieved:', user ? user.email : 'null');
+      return parseStringify(user);
+    } catch (error) {
+      console.error('[getLoggedInUser] Error getting user info:', error);
+
+      // Attempt to refresh session if token might be expired
+      console.log('[getLoggedInUser] Attempting to refresh session');
+      const refreshed = await refreshAuthSession();
+
+      if (refreshed) {
+        console.log('[getLoggedInUser] Session refreshed, retrying getUserInfo');
+        const user = await getUserInfo({ userId: authUserId });
+        console.log('[getLoggedInUser] User info retrieved after refresh:', user ? user.email : 'null');
+        return parseStringify(user);
+      }
+
+      return null;
+    }
   } catch (error) {
     console.error('[getLoggedInUser] Error:', error);
     return null;
@@ -196,10 +213,27 @@ export async function getLoggedInUser() {
 
 export const logoutAccount = async () => {
   try {
-    await clearAuthCookies();
+    console.log('[logoutAccount] Starting logout');
+
+    // Call the logout API endpoint
+    const response = await fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      console.error('[logoutAccount] Logout API failed:', response.status);
+      return false;
+    }
+
+    console.log('[logoutAccount] Logout successful');
     return true;
   } catch (error) {
-    return null;
+    console.error('[logoutAccount] Error:', error);
+    return false;
   }
 }
 
