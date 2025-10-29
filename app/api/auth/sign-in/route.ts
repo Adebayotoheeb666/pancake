@@ -4,25 +4,36 @@ import { getUserInfo } from '@/lib/actions/user.actions';
 import { withRateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
 async function handleSignIn(request: NextRequest) {
+  let body;
+
   try {
-    const body = await request.json();
-    const { email, password } = body;
+    body = await request.json();
+  } catch (parseError) {
+    console.error('[API /auth/sign-in] Failed to parse request body:', parseError);
+    return NextResponse.json(
+      { error: 'Invalid request body' },
+      { status: 400 }
+    );
+  }
 
-    console.log('[API /auth/sign-in] Sign-in request for:', email);
-    
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      );
-    }
+  const { email, password } = body;
 
+  console.log('[API /auth/sign-in] Sign-in request for:', email);
+
+  if (!email || !password) {
+    return NextResponse.json(
+      { error: 'Email and password are required' },
+      { status: 400 }
+    );
+  }
+
+  try {
     const { data: auth, error } = await supabasePublic.auth.signInWithPassword({ email, password });
-    
+
     if (error) {
       console.error('[API /auth/sign-in] Supabase auth error:', error.message);
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: error.message || 'Invalid email or password' },
         { status: 401 }
       );
     }
@@ -36,7 +47,7 @@ async function handleSignIn(request: NextRequest) {
     }
 
     console.log('[API /auth/sign-in] Auth successful, user ID:', auth.user.id);
-    
+
     // Verify user profile exists
     const user = await getUserInfo({ userId: auth.user.id });
     if (!user) {
@@ -70,12 +81,13 @@ async function handleSignIn(request: NextRequest) {
     });
 
     console.log('[API /auth/sign-in] Set-Cookie headers added');
-    
+
     return response;
   } catch (error) {
     console.error('[API /auth/sign-in] Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An error occurred during sign in';
     return NextResponse.json(
-      { error: 'An error occurred during sign in' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

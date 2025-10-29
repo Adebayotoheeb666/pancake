@@ -16,9 +16,13 @@ export interface RateLimitOptions {
 
 export function getRateLimitKey(request: NextRequest, prefix: string): string {
   // Use IP address or user ID as the key
-  const ip = request.headers.get('x-forwarded-for') || 
-             request.headers.get('x-real-ip') || 
-             'unknown';
+  // Try multiple headers for IP extraction (for different proxy setups)
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    request.headers.get('x-real-ip') ||
+    request.headers.get('cf-connecting-ip') ||
+    request.ip ||
+    'unknown';
   return `${prefix}:${ip}`;
 }
 

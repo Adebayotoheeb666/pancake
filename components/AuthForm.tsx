@@ -89,26 +89,33 @@ const AuthForm = ({ type }: { type: string }) => {
               credentials: 'include',
             });
 
-            if (!response.ok) {
-              let errorMessage = 'Failed to create account. Please try again.';
-              try {
+            let responseData: any = null;
+            let errorMessage = 'Failed to create account. Please try again.';
+
+            try {
+              const contentType = response.headers.get('content-type');
+              if (contentType && contentType.includes('application/json')) {
+                responseData = await response.json();
+              } else {
                 const responseText = await response.text();
                 if (responseText) {
-                  const errorData = JSON.parse(responseText);
-                  errorMessage = errorData.error || errorMessage;
+                  responseData = JSON.parse(responseText);
                 }
-              } catch (e) {
-                console.error('Failed to parse error response:', e);
               }
+            } catch (parseError) {
+              console.error('Failed to parse response:', parseError);
+            }
+
+            if (!response.ok) {
+              errorMessage = responseData?.error || errorMessage;
               console.error('Sign up failed:', errorMessage);
               setError(errorMessage);
               setIsLoading(false);
               return;
             }
 
-            const result = await response.json();
             console.log('Sign up successful, redirecting');
-            router.push(result.redirectTo || '/');
+            router.push(responseData?.redirectTo || '/');
           } catch (error) {
             console.error('Sign up fetch error:', error);
             setError('Network error. Please try again.');
@@ -131,26 +138,33 @@ const AuthForm = ({ type }: { type: string }) => {
               credentials: 'include',
             });
 
-            if (!response.ok) {
-              let errorMessage = 'Invalid email or password. Please try again.';
-              try {
+            let responseData: any = null;
+            let errorMessage = 'Invalid email or password. Please try again.';
+
+            try {
+              const contentType = response.headers.get('content-type');
+              if (contentType && contentType.includes('application/json')) {
+                responseData = await response.json();
+              } else {
                 const responseText = await response.text();
                 if (responseText) {
-                  const errorData = JSON.parse(responseText);
-                  errorMessage = errorData.error || errorMessage;
+                  responseData = JSON.parse(responseText);
                 }
-              } catch (e) {
-                console.error('Failed to parse error response:', e);
               }
+            } catch (parseError) {
+              console.error('Failed to parse response:', parseError);
+            }
+
+            if (!response.ok) {
+              errorMessage = responseData?.error || errorMessage;
               console.error('Sign in failed:', errorMessage);
               setError(errorMessage);
               setIsLoading(false);
               return;
             }
 
-            const result = await response.json();
             console.log('Sign in successful, redirecting');
-            router.push(result.redirectTo || '/');
+            router.push(responseData?.redirectTo || '/');
           } catch (error) {
             console.error('Sign in fetch error:', error);
             setError('Network error. Please try again.');

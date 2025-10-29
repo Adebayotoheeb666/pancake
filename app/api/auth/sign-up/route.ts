@@ -5,12 +5,23 @@ import { withRateLimit, getRateLimitKey } from '@/lib/rate-limit';
 const USERS_TABLE = 'users';
 
 async function handleSignUp(request: NextRequest) {
+  let body;
+
   try {
-    const body = await request.json();
-    const { firstName, lastName, address1, city, state, postalCode, dateOfBirth, ssn, email, password } = body;
+    body = await request.json();
+  } catch (parseError) {
+    console.error('[API /auth/sign-up] Failed to parse request body:', parseError);
+    return NextResponse.json(
+      { error: 'Invalid request body' },
+      { status: 400 }
+    );
+  }
 
-    console.log('[API /auth/sign-up] Sign-up request for:', email);
+  const { firstName, lastName, address1, city, state, postalCode, dateOfBirth, ssn, email, password } = body;
 
+  console.log('[API /auth/sign-up] Sign-up request for:', email);
+
+  try {
     // Create auth user using admin client with email confirmed
     const { data: auth, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -21,7 +32,7 @@ async function handleSignUp(request: NextRequest) {
     if (authError || !auth.user) {
       console.error('[API /auth/sign-up] Auth error:', authError?.message);
       return NextResponse.json(
-        { error: 'Failed to create account' },
+        { error: authError?.message || 'Failed to create account' },
         { status: 400 }
       );
     }
@@ -50,10 +61,13 @@ async function handleSignUp(request: NextRequest) {
 
     if (profileError || !userData) {
       console.error('[API /auth/sign-up] Profile creation error:', profileError?.message);
-      // Clean up: delete the auth user since profile creation failed
-      await supabaseAdmin.auth.admin.deleteUser(auth.user.id);
+      try {
+        await supabaseAdmin.auth.admin.deleteUser(auth.user.id);
+      } catch (deleteError) {
+        console.error('[API /auth/sign-up] Failed to cleanup auth user:', deleteError);
+      }
       return NextResponse.json(
-        { error: 'Failed to create user profile' },
+        { error: profileError?.message || 'Failed to create user profile' },
         { status: 400 }
       );
     }
@@ -69,7 +83,7 @@ async function handleSignUp(request: NextRequest) {
     if (signInError || !signInAuth.session) {
       console.error('[API /auth/sign-up] Sign-in error:', signInError?.message);
       return NextResponse.json(
-        { error: 'Account created but could not establish session' },
+        { error: signInError?.message || 'Account created but could not establish session' },
         { status: 400 }
       );
     }
@@ -99,12 +113,13 @@ async function handleSignUp(request: NextRequest) {
     });
 
     console.log('[API /auth/sign-up] Set-Cookie headers added');
-    
+
     return response;
   } catch (error) {
     console.error('[API /auth/sign-up] Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An error occurred during sign up';
     return NextResponse.json(
-      { error: 'An error occurred during sign up' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
