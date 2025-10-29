@@ -17,18 +17,18 @@ const Transfer = async () => {
   })
 
   if(!accounts) return;
-  
+
   const accountsData = accounts?.data;
 
   return (
     <section className="payment-transfer">
-      <HeaderBox 
+      <HeaderBox
         title="Payment Transfer"
         subtext="Please provide any specific details or notes related to the payment transfer"
       />
 
       <section className="size-full pt-5">
-        <PaymentTransferForm accounts={accountsData} />
+        <PaymentTransferForm accounts={accountsData} userId={loggedIn.$id} />
       </section>
     </section>
   )
