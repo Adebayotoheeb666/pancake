@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clearAuthCookies } from '@/lib/supabase';
+import { withRateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
-export async function POST(request: NextRequest) {
+async function handleLogout(request: NextRequest) {
   try {
     console.log('[API /auth/logout] Logout request');
 
