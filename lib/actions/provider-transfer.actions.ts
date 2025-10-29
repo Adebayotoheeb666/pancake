@@ -17,7 +17,17 @@ import {
 import {
   createMonnifyTransfer,
   createMonnifyTransferRecipient,
+  getMonnifyTransactions,
 } from "./monnify.actions";
+import {
+  getFlutterwaveTransactions,
+} from "./flutterwave.actions";
+import {
+  getPaystackTransactions,
+} from "./paystack.actions";
+import {
+  getOpayTransactions,
+} from "./opay.actions";
 
 export const getLinkedAccounts = async ({ userId }: { userId: string }) => {
   try {
