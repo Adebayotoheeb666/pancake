@@ -190,6 +190,7 @@ const monnifyTransfer = async (
 ) => {
   try {
     const transfer = await createMonnifyTransfer({
+      sourceAccountNumber: senderAccount.account_number,
       accountNumber: receiverAccount.account_number,
       bankCode: receiverAccount.bank_code || "",
       amount: Number(amount),
