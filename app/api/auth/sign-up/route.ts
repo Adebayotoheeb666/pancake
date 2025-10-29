@@ -5,8 +5,18 @@ import { withRateLimit, getRateLimitKey } from '@/lib/rate-limit';
 const USERS_TABLE = 'users';
 
 async function handleSignUp(request: NextRequest) {
+  let body;
   try {
-    const body = await request.json();
+    body = await request.json();
+  } catch (parseError) {
+    console.error('[API /auth/sign-up] Failed to parse request body:', parseError);
+    return NextResponse.json(
+      { error: 'Invalid request body' },
+      { status: 400 }
+    );
+  }
+
+  try {
     const { firstName, lastName, address1, city, state, postalCode, dateOfBirth, ssn, email, password } = body;
 
     console.log('[API /auth/sign-up] Sign-up request for:', email);
