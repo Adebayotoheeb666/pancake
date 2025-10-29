@@ -185,3 +185,75 @@ export const getTransactions = async ({
     console.error("An error occurred while getting the accounts:", error);
   }
 };
+
+// Get provider accounts (African providers)
+export const getProviderAccounts = async ({ userId }: getAccountsProps) => {
+  try {
+    const { getLinkedAccounts } = await import("./provider-transfer.actions");
+
+    const linkedAccounts = await getLinkedAccounts({ userId });
+
+    if (!linkedAccounts || linkedAccounts.length === 0) {
+      return parseStringify({ data: [], totalBanks: 0, totalCurrentBalance: 0 });
+    }
+
+    const accounts = linkedAccounts.map((account: any) => ({
+      id: account.id,
+      name: account.account_name,
+      accountNumber: account.account_number,
+      bankName: account.bank_name,
+      provider: account.provider,
+      country: account.country,
+      type: "provider_account",
+      appwriteItemId: account.id,
+    }));
+
+    return parseStringify({
+      data: accounts,
+      totalBanks: accounts.length,
+      totalCurrentBalance: 0
+    });
+  } catch (error) {
+    console.error("An error occurred while getting provider accounts:", error);
+    return parseStringify({ data: [], totalBanks: 0, totalCurrentBalance: 0 });
+  }
+};
+
+// Get provider account transactions
+export const getProviderAccountTransactions = async ({
+  linkedAccountId,
+  provider,
+}: {
+  linkedAccountId: string;
+  provider: "flutterwave" | "paystack" | "opay" | "monnify";
+}) => {
+  try {
+    const { getProviderTransactions } = await import("./provider-transfer.actions");
+
+    const transactions = await getProviderTransactions(provider, linkedAccountId, {
+      customerId: linkedAccountId,
+      pageNumber: 0,
+    });
+
+    if (!transactions || transactions.length === 0) {
+      return parseStringify({ data: [], transactions: [] });
+    }
+
+    const formattedTransactions = transactions.map((transaction: any) => ({
+      id: transaction.id || transaction.reference,
+      name: transaction.name,
+      amount: transaction.amount,
+      date: transaction.date || new Date().toISOString(),
+      status: transaction.status || "completed",
+      reference: transaction.reference,
+      type: "transfer",
+      paymentChannel: "provider",
+      category: "Transfer",
+    }));
+
+    return parseStringify({ data: [], transactions: formattedTransactions });
+  } catch (error) {
+    console.error("An error occurred while getting provider account transactions:", error);
+    return parseStringify({ data: [], transactions: [] });
+  }
+};
