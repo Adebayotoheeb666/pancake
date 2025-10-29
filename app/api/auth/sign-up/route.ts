@@ -33,18 +33,15 @@ export async function POST(request: NextRequest) {
       .insert([
         {
           auth_user_id: auth.user.id,
-          firstName,
-          lastName,
+          first_name: firstName,
+          last_name: lastName,
           address1,
           city,
           state,
-          postalCode,
-          dateOfBirth,
+          postal_code: postalCode,
+          date_of_birth: dateOfBirth,
           ssn,
           email,
-          dwollaCustomerId: '',
-          dwollaFundingId: '',
-          appwriteItemId: '',
         },
       ])
       .select()
