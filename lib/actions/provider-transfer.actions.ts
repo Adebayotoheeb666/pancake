@@ -221,6 +221,53 @@ const monnifyTransfer = async (
   }
 };
 
+export const getProviderTransactions = async (
+  provider: "flutterwave" | "paystack" | "opay" | "monnify",
+  linkedAccountId?: string,
+  options?: any
+) => {
+  try {
+    switch (provider) {
+      case "flutterwave":
+        if (!options?.customerId) return [];
+        const flutterwaveTransactions = await getFlutterwaveTransactions({
+          customerId: options.customerId,
+          from: options.from,
+          to: options.to,
+        });
+        return flutterwaveTransactions || [];
+
+      case "paystack":
+        const paystackTransactions = await getPaystackTransactions({
+          perPage: options?.perPage || 10,
+        });
+        return paystackTransactions || [];
+
+      case "opay":
+        if (!options?.customerId) return [];
+        const opayTransactions = await getOpayTransactions({
+          customerId: options.customerId,
+          from: options.from,
+          to: options.to,
+        });
+        return opayTransactions || [];
+
+      case "monnify":
+        const monnifyTransactions = await getMonnifyTransactions({
+          pageNumber: options?.pageNumber || 0,
+          pageSize: options?.pageSize || 10,
+        });
+        return monnifyTransactions || [];
+
+      default:
+        return [];
+    }
+  } catch (error) {
+    console.error(`Error fetching ${provider} transactions:`, error);
+    return [];
+  }
+};
+
 declare interface PerformProviderTransferOptions {
   provider: "flutterwave" | "paystack" | "opay" | "monnify";
   amount: number;
