@@ -6,7 +6,7 @@ import { CountryCode, ProcessorTokenCreateRequest, ProcessorTokenCreateRequestPr
 import { plaidClient } from '@/lib/plaid';
 import { encryptId, extractCustomerIdFromUrl, parseStringify } from "../utils";
 import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
-import { supabaseAdmin, supabasePublic, setAuthCookies, clearAuthCookies, getAuthUserIdFromCookies } from "../supabase";
+import { supabaseAdmin, supabasePublic, setAuthCookies, clearAuthCookies, getAuthUserIdFromCookies, refreshAuthSession } from "../supabase";
 
 const USERS_TABLE = "users";
 const BANKS_TABLE = "banks";
