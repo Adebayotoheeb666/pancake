@@ -165,8 +165,9 @@ const opayTransfer = async (
     const transfer = await createOpayTransfer({
       beneficiaryId: beneficiary.beneficiaryId,
       amount: Number(amount),
+      currency: "NGN",
       reference: `TXN-${Date.now()}`,
-      remark: `Transfer to ${receiverAccount.account_name}`,
+      narration: `Transfer to ${receiverAccount.account_name}`,
     });
 
     return {
