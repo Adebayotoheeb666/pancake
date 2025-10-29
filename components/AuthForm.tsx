@@ -133,26 +133,28 @@ const AuthForm = ({ type }: { type: string }) => {
               credentials: 'include',
             });
 
-            if (!response.ok) {
-              let errorMessage = 'Invalid email or password. Please try again.';
-              try {
-                const responseText = await response.text();
-                if (responseText) {
-                  const errorData = JSON.parse(responseText);
-                  errorMessage = errorData.error || errorMessage;
-                }
-              } catch (e) {
-                console.error('Failed to parse error response:', e);
+            let responseData: any = null;
+            let errorMessage = 'Invalid email or password. Please try again.';
+
+            try {
+              const responseText = await response.text();
+              if (responseText) {
+                responseData = JSON.parse(responseText);
               }
+            } catch (e) {
+              console.error('Failed to parse response:', e);
+            }
+
+            if (!response.ok) {
+              errorMessage = responseData?.error || errorMessage;
               console.error('Sign in failed:', errorMessage);
               setError(errorMessage);
               setIsLoading(false);
               return;
             }
 
-            const result = await response.json();
             console.log('Sign in successful, redirecting');
-            router.push(result.redirectTo || '/');
+            router.push(responseData?.redirectTo || '/');
           } catch (error) {
             console.error('Sign in fetch error:', error);
             setError('Network error. Please try again.');
