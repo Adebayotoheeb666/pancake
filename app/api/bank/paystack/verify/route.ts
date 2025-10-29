@@ -56,3 +56,15 @@ async function handleVerify(request: NextRequest) {
     );
   }
 }
+
+export async function POST(request: NextRequest) {
+  return withRateLimit(
+    request,
+    () => handleVerify(request),
+    {
+      limit: 10, // 10 verification attempts
+      windowMs: 60 * 60 * 1000, // 1 hour
+      keyGenerator: (req) => `paystack-verify:${getRateLimitKey(req, '')}`,
+    }
+  );
+}
