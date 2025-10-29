@@ -4,8 +4,9 @@ import { createTransfer } from '@/lib/actions/dwolla.actions';
 import { createTransaction } from '@/lib/actions/transaction.actions';
 import { getBank, getBankByAccountId } from '@/lib/actions/user.actions';
 import { supabaseAdmin } from '@/lib/supabase';
+import { withRateLimit, getRateLimitKey } from '@/lib/rate-limit';
 
-export async function POST(request: NextRequest) {
+async function handleTransfer(request: NextRequest) {
   try {
     const body = await request.json();
     const {
