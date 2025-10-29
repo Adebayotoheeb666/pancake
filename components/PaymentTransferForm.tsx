@@ -3,13 +3,14 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
 import { createTransfer } from "@/lib/actions/dwolla.actions";
 import { createTransaction } from "@/lib/actions/transaction.actions";
 import { getBank, getBankByAccountId } from "@/lib/actions/user.actions";
+import { getLinkedAccounts } from "@/lib/actions/provider-transfer.actions";
 import { decryptId } from "@/lib/utils";
 
 import { BankDropdown } from "./BankDropdown";
@@ -27,103 +28,384 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 
 const formSchema = z.object({
+  transferType: z.enum(["plaid", "provider"], {
+    errorMap: () => ({ message: "Please select a transfer type" }),
+  }),
+  provider: z.string().optional(),
   email: z.string().email("Invalid email address"),
   name: z.string().min(4, "Transfer note is too short"),
-  amount: z.string().min(4, "Amount is too short"),
-  senderBank: z.string().min(4, "Please select a valid bank account"),
-  sharableId: z.string().min(8, "Please select a valid sharable Id"),
+  amount: z.string().min(1, "Amount is required"),
+  senderBank: z.string().optional(),
+  senderLinkedAccount: z.string().optional(),
+  receiverLinkedAccount: z.string().optional(),
+  sharableId: z.string().optional(),
 });
 
-const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
+interface LinkedAccount {
+  id: string;
+  provider: string;
+  account_name: string;
+  account_number: string;
+  bank_name: string;
+  user_id: string;
+}
+
+const PaymentTransferForm = ({
+  accounts,
+  userId,
+}: PaymentTransferFormProps & { userId: string }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
+  const [providerAccounts, setProviderAccounts] = useState<LinkedAccount[]>([]);
+  const [selectedProvider, setSelectedProvider] = useState<string>("");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      transferType: "plaid",
+      provider: "",
       name: "",
       email: "",
       amount: "",
       senderBank: "",
+      senderLinkedAccount: "",
+      receiverLinkedAccount: "",
       sharableId: "",
     },
   });
+
+  useEffect(() => {
+    const fetchLinkedAccounts = async () => {
+      try {
+        const accounts = await getLinkedAccounts({ userId });
+        setLinkedAccounts(accounts);
+      } catch (error) {
+        console.error("Failed to fetch linked accounts:", error);
+      }
+    };
+
+    if (userId) {
+      fetchLinkedAccounts();
+    }
+  }, [userId]);
+
+  const transferType = form.watch("transferType");
+  const selectedProviderValue = form.watch("provider");
+
+  useEffect(() => {
+    if (transferType === "provider" && selectedProviderValue) {
+      const filtered = linkedAccounts.filter(
+        (acc) => acc.provider === selectedProviderValue
+      );
+      setProviderAccounts(filtered);
+      setSelectedProvider(selectedProviderValue);
+    }
+  }, [transferType, selectedProviderValue, linkedAccounts]);
 
   const submit = async (data: z.infer<typeof formSchema>) => {
     setIsLoading(true);
 
     try {
-      const receiverAccountId = decryptId(data.sharableId);
-      const receiverBank = await getBankByAccountId({
-        accountId: receiverAccountId,
-      });
-      const senderBank = await getBank({ documentId: data.senderBank });
+      if (data.transferType === "plaid") {
+        // Existing Plaid/Dwolla flow
+        const receiverAccountId = decryptId(data.sharableId!);
+        const receiverBank = await getBankByAccountId({
+          accountId: receiverAccountId,
+        });
+        const senderBank = await getBank({ documentId: data.senderBank! });
 
-      const transferParams = {
-        sourceFundingSourceUrl: senderBank.fundingSourceUrl,
-        destinationFundingSourceUrl: receiverBank.fundingSourceUrl,
-        amount: data.amount,
-      };
-      // create transfer
-      const transfer = await createTransfer(transferParams);
-
-      // create transfer transaction
-      if (transfer) {
-        const transaction = {
-          name: data.name,
+        const transferParams = {
+          sourceFundingSourceUrl: senderBank.fundingSourceUrl,
+          destinationFundingSourceUrl: receiverBank.fundingSourceUrl,
           amount: data.amount,
-          senderId: senderBank.userId.$id,
-          senderBankId: senderBank.$id,
-          receiverId: receiverBank.userId.$id,
-          receiverBankId: receiverBank.$id,
-          email: data.email,
         };
 
-        const newTransaction = await createTransaction(transaction);
+        const transfer = await createTransfer(transferParams);
 
-        if (newTransaction) {
+        if (transfer) {
+          const transaction = {
+            name: data.name,
+            amount: data.amount,
+            senderId: senderBank.userId.$id,
+            senderBankId: senderBank.$id,
+            receiverId: receiverBank.userId.$id,
+            receiverBankId: receiverBank.$id,
+            email: data.email,
+          };
+
+          await createTransaction(transaction);
           form.reset();
           router.push("/");
         }
+      } else if (data.transferType === "provider") {
+        // Provider transfer flow
+        const response = await fetch("/api/transfer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "provider",
+            senderId: userId,
+            amount: data.amount,
+            email: data.email,
+            name: data.name,
+            linkedAccountId: data.senderLinkedAccount,
+            receiverLinkedAccountId: data.receiverLinkedAccount,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Transfer failed");
+        }
+
+        form.reset();
+        router.push("/");
       }
     } catch (error) {
-      console.error("Submitting create transfer request failed: ", error);
+      console.error("Transfer error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Transfer failed";
+      alert(errorMessage);
     }
 
     setIsLoading(false);
   };
 
+  const plaidAccounts = accounts || [];
+  const hasPlaidAccounts = plaidAccounts.length > 0;
+  const hasProviderAccounts = linkedAccounts.length > 0;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(submit)} className="flex flex-col">
-        <FormField
-          control={form.control}
-          name="senderBank"
-          render={() => (
-            <FormItem className="border-t border-gray-200">
-              <div className="payment-transfer_form-item pb-6 pt-5">
-                <div className="payment-transfer_form-content">
-                  <FormLabel className="text-14 font-medium text-gray-700">
-                    Select Source Bank
-                  </FormLabel>
-                  <FormDescription className="text-12 font-normal text-gray-600">
-                    Select the bank account you want to transfer funds from
-                  </FormDescription>
-                </div>
-                <div className="flex w-full flex-col">
-                  <FormControl>
-                    <BankDropdown
-                      accounts={accounts}
-                      setValue={form.setValue}
-                      otherStyles="!w-full"
-                    />
-                  </FormControl>
+        {hasPlaidAccounts && hasProviderAccounts && (
+          <FormField
+            control={form.control}
+            name="transferType"
+            render={({ field }) => (
+              <FormItem className="border-t border-gray-200">
+                <div className="payment-transfer_form-item pb-6 pt-5">
+                  <div className="payment-transfer_form-content">
+                    <FormLabel className="text-14 font-medium text-gray-700">
+                      Transfer Type
+                    </FormLabel>
+                    <FormDescription className="text-12 font-normal text-gray-600">
+                      Choose how you want to transfer funds
+                    </FormDescription>
+                  </div>
+                  <div className="flex w-full flex-col gap-3">
+                    <label className="flex items-center gap-3 rounded-lg border border-gray-300 p-3 cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        value="plaid"
+                        checked={field.value === "plaid"}
+                        onChange={() => field.onChange("plaid")}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-14 text-gray-700">
+                        Plaid/Dwolla (US Banks)
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-3 rounded-lg border border-gray-300 p-3 cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        value="provider"
+                        checked={field.value === "provider"}
+                        onChange={() => field.onChange("provider")}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-14 text-gray-700">
+                        African Payment Providers (Flutterwave, Paystack, OPay,
+                        Monnify)
+                      </span>
+                    </label>
+                  </div>
                   <FormMessage className="text-12 text-red-500" />
                 </div>
-              </div>
-            </FormItem>
-          )}
-        />
+              </FormItem>
+            )}
+          />
+        )}
+
+        {transferType === "plaid" && hasPlaidAccounts && (
+          <>
+            <FormField
+              control={form.control}
+              name="senderBank"
+              render={() => (
+                <FormItem className="border-t border-gray-200">
+                  <div className="payment-transfer_form-item pb-6 pt-5">
+                    <div className="payment-transfer_form-content">
+                      <FormLabel className="text-14 font-medium text-gray-700">
+                        Select Source Bank
+                      </FormLabel>
+                      <FormDescription className="text-12 font-normal text-gray-600">
+                        Select the bank account you want to transfer funds from
+                      </FormDescription>
+                    </div>
+                    <div className="flex w-full flex-col">
+                      <FormControl>
+                        <BankDropdown
+                          accounts={plaidAccounts}
+                          setValue={form.setValue}
+                          otherStyles="!w-full"
+                        />
+                      </FormControl>
+                      <FormMessage className="text-12 text-red-500" />
+                    </div>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="sharableId"
+              render={({ field }) => (
+                <FormItem className="border-t border-gray-200">
+                  <div className="payment-transfer_form-item pb-5 pt-6">
+                    <FormLabel className="text-14 w-full max-w-[280px] font-medium text-gray-700">
+                      Receiver&apos;s Plaid Sharable Id
+                    </FormLabel>
+                    <div className="flex w-full flex-col">
+                      <FormControl>
+                        <Input
+                          placeholder="Enter the public account number"
+                          className="input-class"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-12 text-red-500" />
+                    </div>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </>
+        )}
+
+        {transferType === "provider" && hasProviderAccounts && (
+          <>
+            <FormField
+              control={form.control}
+              name="provider"
+              render={({ field }) => (
+                <FormItem className="border-t border-gray-200">
+                  <div className="payment-transfer_form-item pb-6 pt-5">
+                    <div className="payment-transfer_form-content">
+                      <FormLabel className="text-14 font-medium text-gray-700">
+                        Payment Provider
+                      </FormLabel>
+                      <FormDescription className="text-12 font-normal text-gray-600">
+                        Select the payment provider you want to use
+                      </FormDescription>
+                    </div>
+                    <div className="flex w-full flex-col">
+                      <FormControl>
+                        <select
+                          value={field.value}
+                          onChange={field.onChange}
+                          className="input-class"
+                        >
+                          <option value="">Select a provider</option>
+                          {Array.from(
+                            new Set(linkedAccounts.map((acc) => acc.provider))
+                          ).map((provider) => (
+                            <option key={provider} value={provider}>
+                              {provider.charAt(0).toUpperCase() +
+                                provider.slice(1)}
+                            </option>
+                          ))}
+                        </select>
+                      </FormControl>
+                      <FormMessage className="text-12 text-red-500" />
+                    </div>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            {selectedProvider && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="senderLinkedAccount"
+                  render={({ field }) => (
+                    <FormItem className="border-t border-gray-200">
+                      <div className="payment-transfer_form-item pb-6 pt-5">
+                        <div className="payment-transfer_form-content">
+                          <FormLabel className="text-14 font-medium text-gray-700">
+                            Sender Account
+                          </FormLabel>
+                          <FormDescription className="text-12 font-normal text-gray-600">
+                            Select your account to send from
+                          </FormDescription>
+                        </div>
+                        <div className="flex w-full flex-col">
+                          <FormControl>
+                            <select
+                              value={field.value}
+                              onChange={field.onChange}
+                              className="input-class"
+                            >
+                              <option value="">Select account</option>
+                              {providerAccounts.map((account) => (
+                                <option key={account.id} value={account.id}>
+                                  {account.account_name} (
+                                  {account.account_number})
+                                </option>
+                              ))}
+                            </select>
+                          </FormControl>
+                          <FormMessage className="text-12 text-red-500" />
+                        </div>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="receiverLinkedAccount"
+                  render={({ field }) => (
+                    <FormItem className="border-t border-gray-200">
+                      <div className="payment-transfer_form-item pb-6 pt-5">
+                        <div className="payment-transfer_form-content">
+                          <FormLabel className="text-14 font-medium text-gray-700">
+                            Receiver Account
+                          </FormLabel>
+                          <FormDescription className="text-12 font-normal text-gray-600">
+                            Select the account to send to
+                          </FormDescription>
+                        </div>
+                        <div className="flex w-full flex-col">
+                          <FormControl>
+                            <select
+                              value={field.value}
+                              onChange={field.onChange}
+                              className="input-class"
+                            >
+                              <option value="">Select account</option>
+                              {providerAccounts.map((account) => (
+                                <option key={account.id} value={account.id}>
+                                  {account.account_name} (
+                                  {account.account_number})
+                                </option>
+                              ))}
+                            </select>
+                          </FormControl>
+                          <FormMessage className="text-12 text-red-500" />
+                        </div>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
+          </>
+        )}
 
         <FormField
           control={form.control}
@@ -190,30 +472,6 @@ const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
 
         <FormField
           control={form.control}
-          name="sharableId"
-          render={({ field }) => (
-            <FormItem className="border-t border-gray-200">
-              <div className="payment-transfer_form-item pb-5 pt-6">
-                <FormLabel className="text-14 w-full max-w-[280px] font-medium text-gray-700">
-                  Receiver&apos;s Plaid Sharable Id
-                </FormLabel>
-                <div className="flex w-full flex-col">
-                  <FormControl>
-                    <Input
-                      placeholder="Enter the public account number"
-                      className="input-class"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className="text-12 text-red-500" />
-                </div>
-              </div>
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
           name="amount"
           render={({ field }) => (
             <FormItem className="border-y border-gray-200">
@@ -237,7 +495,7 @@ const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
         />
 
         <div className="payment-transfer_btn-box">
-          <Button type="submit" className="payment-transfer_btn">
+          <Button type="submit" className="payment-transfer_btn" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 size={20} className="animate-spin" /> &nbsp; Sending...
