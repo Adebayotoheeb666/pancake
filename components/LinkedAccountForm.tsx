@@ -17,25 +17,25 @@ import {
   FormMessage,
 } from "./ui/form";
 import { Input } from "./ui/input";
+import ProviderBankSelect from "./ProviderBankSelect";
 
 const formSchema = z.object({
   provider: z.enum(["flutterwave", "paystack", "opay", "monnify"], {
     errorMap: () => ({ message: "Please select a valid provider" }),
   }),
-  accountNumber: z.string().min(8, "Invalid account number"),
+  accountNumber: z
+    .string()
+    .min(8, "Account number must be at least 8 digits")
+    .max(20, "Account number cannot exceed 20 characters")
+    .regex(/^\d+$/, "Account number must contain only digits"),
   bankCode: z.string().min(1, "Please select a bank"),
   accountName: z.string().optional(),
 });
 
-interface BankOption {
-  code: string;
-  name: string;
-}
-
 interface LinkedAccountFormProps {
   provider: "flutterwave" | "paystack" | "opay" | "monnify";
   userId: string;
-  banks: BankOption[];
+  banks: any[];
   onSuccess?: () => void;
 }
 
