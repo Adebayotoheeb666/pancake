@@ -1,6 +1,6 @@
 import HeaderBox from '@/components/HeaderBox'
 import { Pagination } from '@/components/Pagination';
-import TransactionsTable from '@/components/TransactionsTable';
+import RecentTransactionsFiltered from '@/components/RecentTransactionsFiltered';
 import { getAccount, getAccounts } from '@/lib/actions/bank.actions';
 import { getLoggedInUser } from '@/lib/actions/user.actions';
 import { formatAmount } from '@/lib/utils';
@@ -20,26 +20,16 @@ const TransactionHistory = async ({ searchParams: { id, page }}:SearchParamProps
   })
 
   if(!accounts) return;
-  
+
   const accountsData = accounts?.data;
   const appwriteItemId = (id as string) || accountsData[0]?.appwriteItemId;
 
   const account = await getAccount({ appwriteItemId })
 
-
-const rowsPerPage = 10;
-const totalPages = Math.ceil(account?.transactions.length / rowsPerPage);
-
-const indexOfLastTransaction = currentPage * rowsPerPage;
-const indexOfFirstTransaction = indexOfLastTransaction - rowsPerPage;
-
-const currentTransactions = account?.transactions.slice(
-  indexOfFirstTransaction, indexOfLastTransaction
-)
   return (
     <div className="transactions">
       <div className="transactions-header">
-        <HeaderBox 
+        <HeaderBox
           title="Transaction History"
           subtext="See your bank details and transactions."
         />
@@ -56,7 +46,7 @@ const currentTransactions = account?.transactions.slice(
               ●●●● ●●●● ●●●● {account?.data.mask}
             </p>
           </div>
-          
+
           <div className='transactions-account-balance'>
             <p className="text-14">Current balance</p>
             <p className="text-24 text-center font-bold">{formatAmount(account?.data.currentBalance)}</p>
@@ -64,14 +54,9 @@ const currentTransactions = account?.transactions.slice(
         </div>
 
         <section className="flex w-full flex-col gap-6">
-          <TransactionsTable 
-            transactions={currentTransactions}
+          <RecentTransactionsFiltered
+            transactions={account?.transactions || []}
           />
-            {totalPages > 1 && (
-              <div className="my-4 w-full">
-                <Pagination totalPages={totalPages} page={currentPage} />
-              </div>
-            )}
         </section>
       </div>
     </div>
