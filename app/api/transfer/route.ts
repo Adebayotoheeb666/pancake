@@ -45,6 +45,21 @@ async function handleTransfer(request: NextRequest) {
       const transfer = await createTransfer(transferParams);
 
       if (transfer) {
+        // Store transfer status in database
+        const { data: transferRecord } = await supabaseAdmin
+          .from('transfers')
+          .insert({
+            provider: 'dwolla',
+            amount: Number(amount),
+            sender_id: senderBank.userId.$id,
+            receiver_id: receiverBank.userId.$id,
+            status: 'completed',
+            status_message: 'Transfer completed successfully',
+            reference: `dwolla-${Date.now()}`,
+          })
+          .select()
+          .single();
+
         const transaction = {
           name: name || 'Transfer',
           amount: amount,
@@ -61,6 +76,7 @@ async function handleTransfer(request: NextRequest) {
         return NextResponse.json({
           success: true,
           provider: 'dwolla',
+          transferId: transferRecord?.id,
           message: 'Transfer completed successfully',
         });
       }
@@ -105,6 +121,22 @@ async function handleTransfer(request: NextRequest) {
         receiverAccount: receiverLinkedAccount,
       });
 
+      // Store transfer in database with status tracking
+      const { data: transferRecord } = await supabaseAdmin
+        .from('transfers')
+        .insert({
+          provider: provider,
+          amount: Number(amount),
+          sender_id: senderId,
+          receiver_id: receiverLinkedAccount.user_id,
+          status: transferResult.status || 'processing',
+          status_message: `Transfer initiated via ${provider}`,
+          reference: transferResult.reference,
+          external_transfer_id: transferResult.transferId,
+        })
+        .select()
+        .single();
+
       // Record the transaction
       const transaction = {
         name: name || 'Provider Transfer',
@@ -123,8 +155,9 @@ async function handleTransfer(request: NextRequest) {
       return NextResponse.json({
         success: true,
         provider: provider,
+        transferId: transferRecord?.id,
         transfer: transferResult,
-        message: 'Transfer completed successfully',
+        message: 'Transfer initiated successfully',
       });
     }
 
