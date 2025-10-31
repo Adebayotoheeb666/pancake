@@ -151,17 +151,15 @@ const LinkedAccountForm = ({
                 Bank
               </FormLabel>
               <FormDescription className="text-12 font-normal text-gray-600">
-                Select your bank
+                Search and select your bank
               </FormDescription>
               <FormControl>
-                <select className="input-class" {...field}>
-                  <option value="">Select a bank</option>
-                  {banks.map((bank) => (
-                    <option key={bank.code} value={bank.code}>
-                      {bank.name}
-                    </option>
-                  ))}
-                </select>
+                <ProviderBankSelect
+                  provider={provider}
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={verificationStatus === "verifying" || isLoading}
+                />
               </FormControl>
               <FormMessage className="text-12 text-red-500" />
             </FormItem>
