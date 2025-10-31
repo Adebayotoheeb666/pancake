@@ -53,6 +53,7 @@ const LinkedAccountForm = ({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: "onChange",
     defaultValues: {
       provider,
       accountNumber: "",
