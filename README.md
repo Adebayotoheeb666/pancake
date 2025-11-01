@@ -138,6 +138,16 @@ APPWRITE_SECRET=
 #PLAID
 PLAID_CLIENT_ID=
 PLAID_SECRET=
+
+# RATE LIMIT (optional)
+# To enable Supabase-backed rate limiting for multi-instance deployments,
+# set USE_SUPABASE_RATE_LIMIT=true and ensure the `rate_limit_counters` table
+# exists with columns: key (text primary), count (integer), reset_time (bigint).
+USE_SUPABASE_RATE_LIMIT=
+
+# WEBHOOK SECRET (optional)
+# When set, provider webhooks must include the header 'x-webhook-secret' with this value.
+WEBHOOK_SECRET=
 PLAID_ENV=
 PLAID_PRODUCTS=
 PLAID_COUNTRY_CODES=
@@ -181,6 +191,16 @@ APPWRITE_SECRET=
 #PLAID
 PLAID_CLIENT_ID=
 PLAID_SECRET=
+
+# RATE LIMIT (optional)
+# To enable Supabase-backed rate limiting for multi-instance deployments,
+# set USE_SUPABASE_RATE_LIMIT=true and ensure the `rate_limit_counters` table
+# exists with columns: key (text primary), count (integer), reset_time (bigint).
+USE_SUPABASE_RATE_LIMIT=
+
+# WEBHOOK SECRET (optional)
+# When set, provider webhooks must include the header 'x-webhook-secret' with this value.
+WEBHOOK_SECRET=
 PLAID_ENV=sandbox
 PLAID_PRODUCTS=auth,transactions,identity
 PLAID_COUNTRY_CODES=US,CA
