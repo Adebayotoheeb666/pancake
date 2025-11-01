@@ -14,6 +14,8 @@ const TransferStatusPoller = ({ transferId, provider, intervalMs = 5000 }: Trans
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const toast = useToast();
+
   useEffect(() => {
     let mounted = true;
     let timer: any;
@@ -26,6 +28,12 @@ const TransferStatusPoller = ({ transferId, provider, intervalMs = 5000 }: Trans
         if (data?.status) {
           setStatus(data.status);
           setMessage(data.message || null);
+
+          if (data.status === 'completed') {
+            toast.showToast({ title: 'Transfer complete', message: `Transfer ${transferId} completed`, type: 'success' });
+          } else if (data.status === 'failed' || data.status === 'error') {
+            toast.showToast({ title: 'Transfer failed', message: `Transfer ${transferId} failed`, type: 'error' });
+          }
         }
       } catch (err) {
         console.error('Failed to fetch transfer status', err);
@@ -41,7 +49,7 @@ const TransferStatusPoller = ({ transferId, provider, intervalMs = 5000 }: Trans
       mounted = false;
       clearInterval(timer);
     };
-  }, [transferId, provider, intervalMs]);
+  }, [transferId, provider, intervalMs, toast]);
 
   if (loading) return <div className="text-sm text-gray-600">Checking transfer status...</div>;
 
