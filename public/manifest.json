@@ -1,0 +1,11 @@
+{
+  "name": "Horizon",
+  "short_name": "Horizon",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0b5cff",
+  "icons": [
+    { "src": "/icons/logo.svg", "sizes": "192x192", "type": "image/svg+xml" }
+  ]
+}
