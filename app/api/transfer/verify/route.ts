@@ -5,19 +5,21 @@ import { getBankByAccountId } from '@/lib/actions/user.actions';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sharableId, linkedAccountId } = body;
+    const { sharableId, shareableId, linkedAccountId } = body;
 
-    if (!sharableId && !linkedAccountId) {
-      return NextResponse.json({ error: 'Missing sharableId or linkedAccountId' }, { status: 400 });
+    const providedShareable = shareableId || sharableId;
+
+    if (!providedShareable && !linkedAccountId) {
+      return NextResponse.json({ error: 'Missing shareableId or linkedAccountId' }, { status: 400 });
     }
 
-    if (sharableId) {
-      // decrypt sharableId (client used btoa)
+    if (providedShareable) {
+      // decrypt shareableId (client used btoa)
       let accountId: string;
       try {
-        accountId = Buffer.from(sharableId, 'base64').toString('utf8');
+        accountId = Buffer.from(providedShareable, 'base64').toString('utf8');
       } catch (err) {
-        return NextResponse.json({ error: 'Invalid sharableId' }, { status: 400 });
+        return NextResponse.json({ error: 'Invalid shareableId' }, { status: 400 });
       }
 
       const bank = await getBankByAccountId({ accountId });

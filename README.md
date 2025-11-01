@@ -138,6 +138,16 @@ APPWRITE_SECRET=
 #PLAID
 PLAID_CLIENT_ID=
 PLAID_SECRET=
+
+# RATE LIMIT (optional)
+# To enable Supabase-backed rate limiting for multi-instance deployments,
+# set USE_SUPABASE_RATE_LIMIT=true and ensure the `rate_limit_counters` table
+# exists with columns: key (text primary), count (integer), reset_time (bigint).
+USE_SUPABASE_RATE_LIMIT=
+
+# WEBHOOK SECRET (optional)
+# When set, provider webhooks must include the header 'x-webhook-secret' with this value.
+WEBHOOK_SECRET=
 PLAID_ENV=
 PLAID_PRODUCTS=
 PLAID_COUNTRY_CODES=
@@ -151,6 +161,14 @@ DWOLLA_ENV=sandbox
 ```
 
 Replace the placeholder values with your actual respective account credentials. You can obtain these credentials by signing up on the [Appwrite](https://appwrite.io/?utm_source=youtube&utm_content=reactnative&ref=JSmastery), [Plaid](https://plaid.com/) and [Dwolla](https://www.dwolla.com/)
+
+# Redis (optional)
+
+To enable Redis-backed rate limiting in production:
+
+- Install ioredis locally and in your deployment: npm install ioredis
+- Set REDIS_URL in your environment (e.g. redis://:password@host:6379)
+- The app will use Redis for rate limiting if REDIS_URL is set; otherwise it falls back to Supabase store (if enabled) or in-memory.
 
 **Running the Project**
 
@@ -181,6 +199,16 @@ APPWRITE_SECRET=
 #PLAID
 PLAID_CLIENT_ID=
 PLAID_SECRET=
+
+# RATE LIMIT (optional)
+# To enable Supabase-backed rate limiting for multi-instance deployments,
+# set USE_SUPABASE_RATE_LIMIT=true and ensure the `rate_limit_counters` table
+# exists with columns: key (text primary), count (integer), reset_time (bigint).
+USE_SUPABASE_RATE_LIMIT=
+
+# WEBHOOK SECRET (optional)
+# When set, provider webhooks must include the header 'x-webhook-secret' with this value.
+WEBHOOK_SECRET=
 PLAID_ENV=sandbox
 PLAID_PRODUCTS=auth,transactions,identity
 PLAID_COUNTRY_CODES=US,CA

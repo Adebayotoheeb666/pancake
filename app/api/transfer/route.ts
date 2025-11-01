@@ -32,13 +32,14 @@ async function handleTransfer(request: NextRequest) {
     // Handle Plaid/Dwolla transfer (existing flow)
     if (type === 'dwolla') {
       const senderBank = await getBank({ documentId: senderBankId });
-      // support either raw receiverAccountId or encrypted sharableId
+      // support either raw receiverAccountId or encrypted shareableId (accept both spellings)
       let finalReceiverAccountId = receiverAccountId;
-      if (!finalReceiverAccountId && body.sharableId) {
+      const providedShareable = body.shareableId || body.sharableId;
+      if (!finalReceiverAccountId && providedShareable) {
         try {
-          finalReceiverAccountId = Buffer.from(body.sharableId, 'base64').toString('utf8');
+          finalReceiverAccountId = Buffer.from(providedShareable, 'base64').toString('utf8');
         } catch (err) {
-          return NextResponse.json({ error: 'Invalid sharableId' }, { status: 400 });
+          return NextResponse.json({ error: 'Invalid shareableId' }, { status: 400 });
         }
       }
 

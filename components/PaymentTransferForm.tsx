@@ -35,7 +35,7 @@ const formSchema = z.object({
   senderBank: z.string().optional(),
   senderLinkedAccount: z.string().optional(),
   receiverLinkedAccount: z.string().optional(),
-  sharableId: z.string().optional(),
+  shareableId: z.string().optional(),
 });
 
 interface LinkedAccount {
@@ -76,7 +76,7 @@ const PaymentTransferForm = ({
       senderBank: "",
       senderLinkedAccount: "",
       receiverLinkedAccount: "",
-      sharableId: "",
+      shareableId: "",
     },
   });
 
@@ -109,9 +109,9 @@ const PaymentTransferForm = ({
   }, [transferType, selectedProviderValue, linkedAccounts]);
 
   const verifyRecipient = async () => {
-    const sharableId = form.getValues("sharableId");
-    if (!sharableId) {
-      setRecipientVerificationError("Enter recipient sharable id");
+    const shareableId = form.getValues("shareableId");
+    if (!shareableId) {
+      setRecipientVerificationError("Enter recipient shareable id");
       return;
     }
 
@@ -122,7 +122,7 @@ const PaymentTransferForm = ({
       const res = await fetch("/api/transfer/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sharableId }),
+        body: JSON.stringify({ shareableId }),
       });
 
       const data = await res.json();
@@ -149,7 +149,7 @@ const PaymentTransferForm = ({
             type: "dwolla",
             senderId: userId,
             senderBankId: data.senderBank,
-            sharableId: data.sharableId,
+            shareableId: data.shareableId,
             amount: data.amount,
             email: data.email,
             name: data.name,
@@ -288,12 +288,12 @@ const PaymentTransferForm = ({
 
             <FormField
               control={form.control}
-              name="sharableId"
+              name="shareableId"
               render={({ field }) => (
                 <FormItem className="border-t border-gray-200">
                   <div className="payment-transfer_form-item pb-5 pt-6">
                     <FormLabel className="text-14 w-full max-w-[280px] font-medium text-gray-700">
-                      Receiver&apos;s Plaid Sharable Id
+                      Receiver&apos;s Plaid Shareable Id
                     </FormLabel>
                     <div className="flex w-full flex-col">
                       <div className="flex gap-2 items-center">
