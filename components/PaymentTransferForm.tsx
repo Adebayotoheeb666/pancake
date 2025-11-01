@@ -109,9 +109,9 @@ const PaymentTransferForm = ({
   }, [transferType, selectedProviderValue, linkedAccounts]);
 
   const verifyRecipient = async () => {
-    const sharableId = form.getValues("sharableId");
-    if (!sharableId) {
-      setRecipientVerificationError("Enter recipient sharable id");
+    const shareableId = form.getValues("shareableId");
+    if (!shareableId) {
+      setRecipientVerificationError("Enter recipient shareable id");
       return;
     }
 
@@ -122,7 +122,7 @@ const PaymentTransferForm = ({
       const res = await fetch("/api/transfer/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sharableId }),
+        body: JSON.stringify({ shareableId }),
       });
 
       const data = await res.json();
