@@ -7,11 +7,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
-import { createTransfer } from "@/lib/actions/dwolla.actions";
-import { createTransaction } from "@/lib/actions/transaction.actions";
-import { getBank, getBankByAccountId } from "@/lib/actions/user.actions";
 import { getLinkedAccounts } from "@/lib/actions/provider-transfer.actions";
-import { decryptId } from "@/lib/utils";
 
 import { BankDropdown } from "./BankDropdown";
 import { Button } from "./ui/button";
@@ -60,6 +56,12 @@ const PaymentTransferForm = ({
   const [providerAccounts, setProviderAccounts] = useState<LinkedAccount[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<string>("");
 
+  const [recipientVerificationStatus, setRecipientVerificationStatus] = useState<
+    "idle" | "verifying" | "verified" | "error"
+  >("idle");
+  const [recipientName, setRecipientName] = useState<string | null>(null);
+  const [recipientVerificationError, setRecipientVerificationError] = useState<string | null>(null);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -103,43 +105,64 @@ const PaymentTransferForm = ({
     }
   }, [transferType, selectedProviderValue, linkedAccounts]);
 
+  const verifyRecipient = async () => {
+    const sharableId = form.getValues("sharableId");
+    if (!sharableId) {
+      setRecipientVerificationError("Enter recipient sharable id");
+      return;
+    }
+
+    setRecipientVerificationStatus("verifying");
+    setRecipientVerificationError(null);
+
+    try {
+      const res = await fetch("/api/transfer/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sharableId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Verification failed");
+
+      setRecipientName(data.accountName || data.account?.account_name || null);
+      setRecipientVerificationStatus("verified");
+    } catch (err) {
+      setRecipientVerificationStatus("error");
+      setRecipientVerificationError(err instanceof Error ? err.message : "Verification failed");
+    }
+  };
+
   const submit = async (data: z.infer<typeof formSchema>) => {
     setIsLoading(true);
 
     try {
       if (data.transferType === "plaid") {
-        // Existing Plaid/Dwolla flow
-        const receiverAccountId = decryptId(data.sharableId!);
-        const receiverBank = await getBankByAccountId({
-          accountId: receiverAccountId,
-        });
-        const senderBank = await getBank({ documentId: data.senderBank! });
-
-        const transferParams = {
-          sourceFundingSourceUrl: senderBank.fundingSourceUrl,
-          destinationFundingSourceUrl: receiverBank.fundingSourceUrl,
-          amount: data.amount,
-        };
-
-        const transfer = await createTransfer(transferParams);
-
-        if (transfer) {
-          const transaction = {
-            name: data.name,
+        // Use server API to perform Dwolla/ Plaid transfer
+        const response = await fetch("/api/transfer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "dwolla",
+            senderId: userId,
+            senderBankId: data.senderBank,
+            sharableId: data.sharableId,
             amount: data.amount,
-            senderId: senderBank.userId.$id,
-            senderBankId: senderBank.$id,
-            receiverId: receiverBank.userId.$id,
-            receiverBankId: receiverBank.$id,
             email: data.email,
-          };
+            name: data.name,
+          }),
+        });
 
-          await createTransaction(transaction);
-          form.reset();
-          router.push("/");
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Transfer failed");
         }
+
+        form.reset();
+        router.push("/");
       } else if (data.transferType === "provider") {
-        // Provider transfer flow
+        // Provider transfer flow via server
         const response = await fetch("/api/transfer", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -165,8 +188,7 @@ const PaymentTransferForm = ({
       }
     } catch (error) {
       console.error("Transfer error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Transfer failed";
+      const errorMessage = error instanceof Error ? error.message : "Transfer failed";
       alert(errorMessage);
     }
 
@@ -270,14 +292,29 @@ const PaymentTransferForm = ({
                       Receiver&apos;s Plaid Sharable Id
                     </FormLabel>
                     <div className="flex w-full flex-col">
-                      <FormControl>
-                        <Input
-                          placeholder="Enter the public account number"
-                          className="input-class"
-                          {...field}
-                        />
-                      </FormControl>
+                      <div className="flex gap-2 items-center">
+                        <FormControl className="flex-1">
+                          <Input
+                            placeholder="Enter the public account number"
+                            className="input-class"
+                            {...field}
+                          />
+                        </FormControl>
+                        <div>
+                          <Button type="button" variant="outline" onClick={verifyRecipient} disabled={recipientVerificationStatus === 'verifying'}>
+                            {recipientVerificationStatus === 'verifying' ? 'Verifying...' : recipientVerificationStatus === 'verified' ? 'Verified' : 'Verify'}
+                          </Button>
+                        </div>
+                      </div>
                       <FormMessage className="text-12 text-red-500" />
+
+                      {recipientVerificationStatus === 'verified' && recipientName && (
+                        <div className="mt-2 text-sm text-green-700">Recipient: {recipientName}</div>
+                      )}
+
+                      {recipientVerificationError && (
+                        <div className="mt-2 text-sm text-red-600">{recipientVerificationError}</div>
+                      )}
                     </div>
                   </div>
                 </FormItem>
@@ -353,8 +390,7 @@ const PaymentTransferForm = ({
                               <option value="">Select account</option>
                               {providerAccounts.map((account) => (
                                 <option key={account.id} value={account.id}>
-                                  {account.account_name} (
-                                  {account.account_number})
+                                  {account.account_name} ({account.account_number})
                                 </option>
                               ))}
                             </select>
@@ -390,8 +426,7 @@ const PaymentTransferForm = ({
                               <option value="">Select account</option>
                               {providerAccounts.map((account) => (
                                 <option key={account.id} value={account.id}>
-                                  {account.account_name} (
-                                  {account.account_number})
+                                  {account.account_name} ({account.account_number})
                                 </option>
                               ))}
                             </select>
