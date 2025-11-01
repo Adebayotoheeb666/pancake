@@ -76,7 +76,7 @@ const PaymentTransferForm = ({
       senderBank: "",
       senderLinkedAccount: "",
       receiverLinkedAccount: "",
-      sharableId: "",
+      shareableId: "",
     },
   });
 
