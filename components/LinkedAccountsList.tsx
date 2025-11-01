@@ -127,6 +127,17 @@ const LinkedAccountsList = ({ userId }: LinkedAccountsListProps) => {
           ))}
         </div>
       )}
+
+      {editingAccount && (
+        <EditLinkedAccountModal
+          account={editingAccount}
+          onSuccess={() => {
+            setEditingAccount(null);
+            fetchAccounts();
+          }}
+          onCancel={() => setEditingAccount(null)}
+        />
+      )}
     </div>
   );
 };
