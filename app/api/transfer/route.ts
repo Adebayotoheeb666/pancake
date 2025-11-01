@@ -177,6 +177,7 @@ async function handleTransfer(request: NextRequest) {
     );
   } catch (error) {
     console.error('Transfer error:', error);
+    try { (await import('@sentry/nextjs')).captureException(error); } catch(e) { console.error('Sentry capture failed', e); }
     return NextResponse.json(
       {
         error:
