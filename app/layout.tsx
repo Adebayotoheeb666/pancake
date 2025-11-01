@@ -31,6 +31,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${ibmPlexSerif.variable}`}>
         {/* Global toast provider */}
         <ToastProvider>
+          <PWARegister />
           {children}
         </ToastProvider>
       </body>
