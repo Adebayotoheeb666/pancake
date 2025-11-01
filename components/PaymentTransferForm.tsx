@@ -543,6 +543,16 @@ const PaymentTransferForm = ({
             )}
           </Button>
         </div>
+
+        {transferResultInfo && (
+          <div className="mt-6 p-4 border rounded bg-gray-50">
+            <h3 className="text-sm font-medium mb-2">Transfer Status</h3>
+            <TransferStatusPoller transferId={transferResultInfo.id} provider={transferResultInfo.provider} />
+            <div className="mt-3">
+              <Button onClick={() => router.push('/')}>Done</Button>
+            </div>
+          </div>
+        )}
       </form>
     </Form>
   );
