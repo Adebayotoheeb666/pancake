@@ -45,6 +45,20 @@ export const getLinkedAccounts = async ({ userId }: { userId: string }) => {
   }
 };
 
+const retry = async <T>(fn: () => Promise<T>, attempts = 3, delayMs = 500): Promise<T> => {
+  let lastError: any;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      const backoff = delayMs * Math.pow(2, i);
+      await new Promise((r) => setTimeout(r, backoff));
+    }
+  }
+  throw lastError;
+};
+
 export const performProviderTransfer = async (
   options: PerformProviderTransferOptions
 ) => {
@@ -55,32 +69,16 @@ export const performProviderTransfer = async (
 
     switch (provider) {
       case "flutterwave":
-        transferResult = await flutterwaveTransfer(
-          amount,
-          senderAccount,
-          receiverAccount
-        );
+        transferResult = await retry(() => flutterwaveTransfer(amount, senderAccount, receiverAccount));
         break;
       case "paystack":
-        transferResult = await paystackTransfer(
-          amount,
-          senderAccount,
-          receiverAccount
-        );
+        transferResult = await retry(() => paystackTransfer(amount, senderAccount, receiverAccount));
         break;
       case "opay":
-        transferResult = await opayTransfer(
-          amount,
-          senderAccount,
-          receiverAccount
-        );
+        transferResult = await retry(() => opayTransfer(amount, senderAccount, receiverAccount));
         break;
       case "monnify":
-        transferResult = await monnifyTransfer(
-          amount,
-          senderAccount,
-          receiverAccount
-        );
+        transferResult = await retry(() => monnifyTransfer(amount, senderAccount, receiverAccount));
         break;
       default:
         throw new Error(`Unsupported provider: ${provider}`);
