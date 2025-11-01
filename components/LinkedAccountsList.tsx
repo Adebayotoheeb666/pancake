@@ -109,14 +109,19 @@ const LinkedAccountsList = ({ userId }: LinkedAccountsListProps) => {
                   </div>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDelete(account.id)}
-                className="text-red-600 hover:bg-red-50"
-              >
-                <Trash2 size={16} />
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setEditingAccount(account)} className="hover:bg-gray-50">
+                  <Edit2 size={16} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(account.id)}
+                  className="text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </div>
             </div>
           ))}
         </div>
