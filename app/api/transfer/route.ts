@@ -32,8 +32,18 @@ async function handleTransfer(request: NextRequest) {
     // Handle Plaid/Dwolla transfer (existing flow)
     if (type === 'dwolla') {
       const senderBank = await getBank({ documentId: senderBankId });
+      // support either raw receiverAccountId or encrypted sharableId
+      let finalReceiverAccountId = receiverAccountId;
+      if (!finalReceiverAccountId && body.sharableId) {
+        try {
+          finalReceiverAccountId = Buffer.from(body.sharableId, 'base64').toString('utf8');
+        } catch (err) {
+          return NextResponse.json({ error: 'Invalid sharableId' }, { status: 400 });
+        }
+      }
+
       const receiverBank = await getBankByAccountId({
-        accountId: receiverAccountId,
+        accountId: finalReceiverAccountId,
       });
 
       const transferParams = {
