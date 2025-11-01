@@ -66,6 +66,7 @@ const PaymentTransferForm = ({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: {
       transferType: "plaid",
       provider: "",
