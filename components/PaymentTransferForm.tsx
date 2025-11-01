@@ -149,7 +149,7 @@ const PaymentTransferForm = ({
             type: "dwolla",
             senderId: userId,
             senderBankId: data.senderBank,
-            sharableId: data.sharableId,
+            shareableId: data.shareableId,
             amount: data.amount,
             email: data.email,
             name: data.name,
