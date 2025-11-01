@@ -102,6 +102,62 @@ CREATE TABLE transactions (
 );
 ```
 
+### 6. `budgets` (NEW)
+Stores per-user budgets for tracking spending.
+
+```sql
+CREATE TABLE budgets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id),
+  name VARCHAR(255) NOT NULL,
+  amount DECIMAL(15,2) NOT NULL,
+  period VARCHAR(50) DEFAULT 'monthly',
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+```
+
+### 7. `savings_goals` (NEW)
+Stores user savings goals.
+
+```sql
+CREATE TABLE savings_goals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id),
+  name VARCHAR(255) NOT NULL,
+  target_amount DECIMAL(15,2) NOT NULL,
+  target_date DATE,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+```
+
+### 8. `audit_logs` (NEW)
+Stores API audit logs for compliance. NOTE: this will store request bodies if enabled — ensure access controls are in place and retention policy is enforced.
+
+```sql
+CREATE TABLE audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id),
+  method VARCHAR(10),
+  path TEXT,
+  status INT,
+  ip VARCHAR(100),
+  body TEXT,
+  meta TEXT,
+  created_at TIMESTAMP DEFAULT now()
+);
+```
+
+Add indexes for the new tables:
+
+```sql
+CREATE INDEX idx_budgets_user_id ON budgets(user_id);
+CREATE INDEX idx_savings_user_id ON savings_goals(user_id);
+CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
+CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
+```
+
 ## Migration Instructions
 
 To apply these schemas to your Supabase database:

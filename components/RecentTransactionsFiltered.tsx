@@ -19,6 +19,11 @@ const RecentTransactionsFiltered = ({
     type: undefined as "debit" | "credit" | undefined,
   });
 
+  const handleExport = () => {
+    // Call server-side export which derives the user from auth cookies
+    window.location.href = `/api/transactions/export`;
+  };
+
   const filteredTransactions = useMemo(() => {
     return filterTransactions(transactions, filters);
   }, [transactions, filters]);
@@ -34,8 +39,19 @@ const RecentTransactionsFiltered = ({
 
   return (
     <div className="space-y-6">
-      <TransactionFilters onFilterChange={handleFilterChange} />
-      
+      <div className="flex items-center justify-between">
+        <TransactionFilters onFilterChange={handleFilterChange} />
+        <div>
+          <button
+            type="button"
+            onClick={handleExport}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded bg-white text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Export CSV
+          </button>
+        </div>
+      </div>
+
       {filteredTransactions.length > 0 ? (
         <div>
           <p className="text-sm text-gray-600 mb-4">

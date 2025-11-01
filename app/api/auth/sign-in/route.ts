@@ -82,6 +82,14 @@ async function handleSignIn(request: NextRequest) {
 
     console.log('[API /auth/sign-in] Set-Cookie headers added');
 
+    // Audit log
+    try {
+      const { logAudit } = await import('@/lib/audit');
+      await logAudit({ userId: auth.user.id, method: 'POST', path: '/api/auth/sign-in', status: 200, ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null, body: { email } });
+    } catch (e) {
+      console.error('Failed to write audit log', e);
+    }
+
     return response;
   } catch (error) {
     console.error('[API /auth/sign-in] Error:', error);

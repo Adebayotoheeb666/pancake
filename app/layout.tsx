@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic'
 import type { Metadata } from "next";
 import { Inter, IBM_Plex_Serif } from "next/font/google";
 import "./globals.css";
+import { ToastProvider } from '@/components/ToastProvider';
+import PWARegister from '@/components/PWARegister';
 
 const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
 const ibmPlexSerif = IBM_Plex_Serif({
@@ -26,7 +28,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${ibmPlexSerif.variable}`}>{children}</body>
+      <body className={`${inter.variable} ${ibmPlexSerif.variable}`}>
+        {/* Global toast provider */}
+        <ToastProvider>
+          <PWARegister />
+          {children}
+        </ToastProvider>
+      </body>
     </html>
   );
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit2 } from "lucide-react";
 import { Button } from "./ui/button";
 import AddLinkedAccountModal from "./AddLinkedAccountModal";
+import EditLinkedAccountModal from './EditLinkedAccountModal';
 
 interface LinkedAccount {
   id: string;
@@ -22,6 +23,7 @@ interface LinkedAccountsListProps {
 const LinkedAccountsList = ({ userId }: LinkedAccountsListProps) => {
   const [accounts, setAccounts] = useState<LinkedAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingAccount, setEditingAccount] = useState<LinkedAccount | null>(null);
 
   const fetchAccounts = async () => {
     try {
@@ -108,17 +110,33 @@ const LinkedAccountsList = ({ userId }: LinkedAccountsListProps) => {
                   </div>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDelete(account.id)}
-                className="text-red-600 hover:bg-red-50"
-              >
-                <Trash2 size={16} />
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setEditingAccount(account)} className="hover:bg-gray-50">
+                  <Edit2 size={16} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(account.id)}
+                  className="text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </div>
             </div>
           ))}
         </div>
+      )}
+
+      {editingAccount && (
+        <EditLinkedAccountModal
+          account={editingAccount}
+          onSuccess={() => {
+            setEditingAccount(null);
+            fetchAccounts();
+          }}
+          onCancel={() => setEditingAccount(null)}
+        />
       )}
     </div>
   );

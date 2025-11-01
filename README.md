@@ -51,6 +51,19 @@ If you're getting started and need assistance or face any bugs, join our active 
 - TypeScript
 - Appwrite
 - Plaid
+
+Testing and CI
+
+- Run tests locally:
+  - npm install
+  - npx playwright install
+  - npm run build
+  - npm run start
+  - npm run test:unit
+  - npm run test:e2e
+
+- CI: the repository workflow .github/workflows/ci.yml expects a repository secret named WEBHOOK_SECRET which will be used for provider webhook signature verification during tests.
+
 - Dwolla
 - React Hook Form
 - Zod

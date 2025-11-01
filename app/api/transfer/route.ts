@@ -32,8 +32,18 @@ async function handleTransfer(request: NextRequest) {
     // Handle Plaid/Dwolla transfer (existing flow)
     if (type === 'dwolla') {
       const senderBank = await getBank({ documentId: senderBankId });
+      // support either raw receiverAccountId or encrypted sharableId
+      let finalReceiverAccountId = receiverAccountId;
+      if (!finalReceiverAccountId && body.sharableId) {
+        try {
+          finalReceiverAccountId = Buffer.from(body.sharableId, 'base64').toString('utf8');
+        } catch (err) {
+          return NextResponse.json({ error: 'Invalid sharableId' }, { status: 400 });
+        }
+      }
+
       const receiverBank = await getBankByAccountId({
-        accountId: receiverAccountId,
+        accountId: finalReceiverAccountId,
       });
 
       const transferParams = {
@@ -44,42 +54,50 @@ async function handleTransfer(request: NextRequest) {
 
       const transfer = await createTransfer(transferParams);
 
-      if (transfer) {
-        // Store transfer status in database
-        const { data: transferRecord } = await supabaseAdmin
-          .from('transfers')
-          .insert({
-            provider: 'dwolla',
-            amount: Number(amount),
-            sender_id: senderBank.userId.$id,
-            receiver_id: receiverBank.userId.$id,
-            status: 'completed',
-            status_message: 'Transfer completed successfully',
-            reference: `dwolla-${Date.now()}`,
-          })
-          .select()
-          .single();
-
-        const transaction = {
-          name: name || 'Transfer',
-          amount: amount,
-          senderId: senderBank.userId.$id,
-          senderBankId: senderBank.$id,
-          receiverId: receiverBank.userId.$id,
-          receiverBankId: receiverBank.$id,
-          email: email,
+    if (transfer) {
+      // Store transfer status in database
+      const { data: transferRecord } = await supabaseAdmin
+        .from('transfers')
+        .insert({
           provider: 'dwolla',
-        };
+          amount: Number(amount),
+          sender_id: senderBank.userId.$id,
+          receiver_id: receiverBank.userId.$id,
+          status: 'completed',
+          status_message: 'Transfer completed successfully',
+          reference: `dwolla-${Date.now()}`,
+        })
+        .select()
+        .single();
 
-        await createTransaction(transaction);
+      const transaction = {
+        name: name || 'Transfer',
+        amount: amount,
+        senderId: senderBank.userId.$id,
+        senderBankId: senderBank.$id,
+        receiverId: receiverBank.userId.$id,
+        receiverBankId: receiverBank.$id,
+        email: email,
+        provider: 'dwolla',
+      };
 
-        return NextResponse.json({
-          success: true,
-          provider: 'dwolla',
-          transferId: transferRecord?.id,
-          message: 'Transfer completed successfully',
-        });
+      await createTransaction(transaction);
+
+      // Audit log
+      try {
+        const { logAudit } = await import('@/lib/audit');
+        await logAudit({ userId: senderBank.userId.$id, method: 'POST', path: '/api/transfer', status: 200, ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null, body: { type: 'dwolla', amount, receiverAccountId } });
+      } catch (e) {
+        console.error('Failed to write audit log', e);
       }
+
+      return NextResponse.json({
+        success: true,
+        provider: 'dwolla',
+        transferId: transferRecord?.id,
+        message: 'Transfer completed successfully',
+      });
+    }
     }
 
     // Handle African provider transfers
@@ -152,6 +170,14 @@ async function handleTransfer(request: NextRequest) {
 
       await createTransaction(transaction);
 
+      // Audit log for provider transfer
+      try {
+        const { logAudit } = await import('@/lib/audit');
+        await logAudit({ userId: senderId, method: 'POST', path: '/api/transfer', status: 200, ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null, body: { provider, amount, senderLinkedAccountId: linkedAccountId, receiverLinkedAccountId } });
+      } catch (e) {
+        console.error('Failed to write audit log', e);
+      }
+
       return NextResponse.json({
         success: true,
         provider: provider,
@@ -167,6 +193,7 @@ async function handleTransfer(request: NextRequest) {
     );
   } catch (error) {
     console.error('Transfer error:', error);
+    try { (await import('@sentry/nextjs')).captureException(error); } catch(e) { console.error('Sentry capture failed', e); }
     return NextResponse.json(
       {
         error:
