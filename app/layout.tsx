@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import type { Metadata } from "next";
 import { Inter, IBM_Plex_Serif } from "next/font/google";
 import "./globals.css";
+import { ToastProvider } from '@/components/ToastProvider';
 
 const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
 const ibmPlexSerif = IBM_Plex_Serif({
