@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "echo \"Run unit and e2e tests (install Jest/Playwright)\"",
+    "test:unit": "echo \"Run unit tests (configure Jest)\"",
+    "test:e2e": "echo \"Run e2e tests (configure Playwright)\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
