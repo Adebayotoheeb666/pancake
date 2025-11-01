@@ -4,6 +4,16 @@ import * as Sentry from '@sentry/nextjs';
 
 export async function POST(request: NextRequest) {
   try {
+    // Optional webhook secret validation
+    const expectedSecret = process.env.WEBHOOK_SECRET;
+    if (expectedSecret) {
+      const provided = request.headers.get('x-webhook-secret') || request.headers.get('x-provider-signature') || request.headers.get('x-signature');
+      if (!provided || provided !== expectedSecret) {
+        console.warn('Webhook secret mismatch');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     const body = await request.json();
     const { provider, external_transfer_id, status, reference, transferId } = body;
 
