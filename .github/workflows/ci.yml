@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      # Single webhook secret used for test signature verification
+      WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+      FLUTTERWAVE_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+      PAYSTACK_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+      OPAY_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+      MONNIFY_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+      DWOLLA_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build
+        run: npm run build
+
+      - name: Start server
+        run: |
+          npm run start &
+          # wait for localhost:3000
+          for i in {1..30}; do
+            if curl -sSf http://localhost:3000 > /dev/null; then
+              echo "Server is up";
+              break;
+            fi
+            echo "Waiting for server...";
+            sleep 1;
+          done
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run e2e tests
+        run: npm run test:e2e
