@@ -62,6 +62,7 @@ const PaymentTransferForm = ({
   >("idle");
   const [recipientName, setRecipientName] = useState<string | null>(null);
   const [recipientVerificationError, setRecipientVerificationError] = useState<string | null>(null);
+  const [transferResultInfo, setTransferResultInfo] = useState<{ id: string; provider: string } | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
