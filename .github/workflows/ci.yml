@@ -48,6 +48,11 @@ jobs:
             sleep 1;
           done
 
+      - name: Seed linked_accounts for CI
+        # This step will insert or find CI-linked accounts and export their IDs as env vars for subsequent steps
+        run: |
+          node scripts/seed-linked-accounts.js >> $GITHUB_ENV
+
       - name: Run unit tests
         run: npm run test:unit
 
