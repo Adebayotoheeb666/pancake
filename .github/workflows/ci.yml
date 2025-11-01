@@ -17,6 +17,9 @@ jobs:
       OPAY_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
       MONNIFY_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
       DWOLLA_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+      # Enable real provider E2E tests and default provider for CI
+      REAL_PROVIDER_E2E: 'true'
+      REAL_PROVIDER: 'flutterwave'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
