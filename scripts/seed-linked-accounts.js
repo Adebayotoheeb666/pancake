@@ -58,11 +58,14 @@ const { createClient } = require('@supabase/supabase-js');
     }
 
     if (!receiverId) {
+      const rawAccountR = `000${Math.floor(Math.random() * 9000) + 1000}`;
+      const encAccountR = process.env.ENCRYPTION_KEY ? Buffer.from(rawAccountR).toString('base64') : rawAccountR;
+
       const insert = {
         user_id: `ci-receiver-${Date.now()}`,
         provider: provider,
         bank_name: `${provider}-bank`,
-        account_number: `000${Math.floor(Math.random() * 9000) + 1000}`,
+        account_number: encAccountR,
         account_name: receiverAccountName,
         bank_code: '000',
         country: 'NG',
