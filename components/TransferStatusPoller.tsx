@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useToast } from './ToastProvider';
 
 interface TransferStatusPollerProps {
   transferId: string;
