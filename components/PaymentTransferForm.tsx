@@ -35,7 +35,7 @@ const formSchema = z.object({
   senderBank: z.string().optional(),
   senderLinkedAccount: z.string().optional(),
   receiverLinkedAccount: z.string().optional(),
-  sharableId: z.string().optional(),
+  shareableId: z.string().optional(),
 });
 
 interface LinkedAccount {
