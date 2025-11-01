@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit2 } from "lucide-react";
 import { Button } from "./ui/button";
 import AddLinkedAccountModal from "./AddLinkedAccountModal";
+import EditLinkedAccountModal from './EditLinkedAccountModal';
 
 interface LinkedAccount {
   id: string;
