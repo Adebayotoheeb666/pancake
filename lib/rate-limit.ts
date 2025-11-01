@@ -39,6 +39,44 @@ export async function checkRateLimit(
 
   const now = Date.now();
 
+  // Prefer Redis store if configured (multi-instance, low-latency)
+  const redisUrl = process.env.REDIS_URL;
+  if (redisUrl) {
+    try {
+      let RedisClient: any = (global as any).__redisClient;
+      if (!RedisClient) {
+        try {
+          // dynamically require ioredis to avoid breaking if not installed
+          const IORedis = require('ioredis');
+          RedisClient = new IORedis(redisUrl);
+          (global as any).__redisClient = RedisClient;
+        } catch (e) {
+          console.warn('[RateLimit] ioredis not installed, falling back to Supabase/in-memory store');
+          RedisClient = null;
+        }
+      }
+
+      if (RedisClient) {
+        const redisKey = `rate:${key}`;
+        // Use Redis INCR with TTL
+        const ttlSeconds = Math.ceil(options.windowMs / 1000);
+        const count = await RedisClient.incr(redisKey);
+        if (count === 1) {
+          await RedisClient.expire(redisKey, ttlSeconds);
+        }
+
+        const allowed = count <= options.limit;
+        const remaining = Math.max(0, options.limit - count);
+        const ttl = await RedisClient.ttl(redisKey);
+        const resetTime = Date.now() + (ttl > 0 ? ttl * 1000 : options.windowMs);
+
+        return { allowed, remaining, resetTime };
+      }
+    } catch (err) {
+      console.error('[RateLimit] Redis error, falling back:', err);
+    }
+  }
+
   // If SUPABASE rate-limit store enabled, persist counters there for multi-instance safety
   const useSupabaseStore = process.env.USE_SUPABASE_RATE_LIMIT === 'true' || !!process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY;
 
