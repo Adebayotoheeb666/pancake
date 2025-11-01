@@ -170,6 +170,14 @@ async function handleTransfer(request: NextRequest) {
 
       await createTransaction(transaction);
 
+      // Audit log for provider transfer
+      try {
+        const { logAudit } = await import('@/lib/audit');
+        await logAudit({ userId: senderId, method: 'POST', path: '/api/transfer', status: 200, ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null, body: { provider, amount, senderLinkedAccountId: linkedAccountId, receiverLinkedAccountId } });
+      } catch (e) {
+        console.error('Failed to write audit log', e);
+      }
+
       return NextResponse.json({
         success: true,
         provider: provider,
