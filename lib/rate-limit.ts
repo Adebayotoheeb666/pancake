@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase';
+
 interface RateLimitStore {
   [key: string]: { count: number; resetTime: number };
 }
 
 // In-memory store for rate limiting (for single instance)
-// For production with multiple instances, use Redis
+// For production with multiple instances, use Redis or Supabase-backed table
 const rateLimitStore: RateLimitStore = {};
 
 export interface RateLimitOptions {
@@ -30,11 +33,60 @@ export async function checkRateLimit(
   request: NextRequest,
   options: RateLimitOptions
 ): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
-  const key = options.keyGenerator 
+  const key = options.keyGenerator
     ? options.keyGenerator(request)
     : getRateLimitKey(request, 'api');
 
   const now = Date.now();
+
+  // If SUPABASE rate-limit store enabled, persist counters there for multi-instance safety
+  const useSupabaseStore = process.env.USE_SUPABASE_RATE_LIMIT === 'true' || !!process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY;
+
+  if (useSupabaseStore) {
+    try {
+      // table: rate_limit_counters with columns: key (text primary), count (int), reset_time (bigint)
+      const { data, error } = await supabaseAdmin
+        .from('rate_limit_counters')
+        .select('*')
+        .eq('key', key)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[RateLimit] Supabase read error:', error);
+      }
+
+      const record = data as any;
+
+      if (!record || now > Number(record.reset_time)) {
+        const resetTime = now + options.windowMs;
+        const { error: insertErr } = await supabaseAdmin
+          .from('rate_limit_counters')
+          .upsert({ key, count: 1, reset_time: resetTime }, { onConflict: 'key' });
+        if (insertErr) console.error('[RateLimit] Supabase upsert error:', insertErr);
+
+        return { allowed: true, remaining: options.limit - 1, resetTime };
+      }
+
+      // increment
+      const newCount = Number(record.count) + 1;
+      const { error: updateErr } = await supabaseAdmin
+        .from('rate_limit_counters')
+        .update({ count: newCount })
+        .eq('key', key);
+      if (updateErr) console.error('[RateLimit] Supabase update error:', updateErr);
+
+      const allowed = newCount <= options.limit;
+      const remaining = Math.max(0, options.limit - newCount);
+
+      return { allowed, remaining, resetTime: Number(record.reset_time) };
+    } catch (err) {
+      console.error('[RateLimit] Supabase fallback error:', err);
+      // fallback to in-memory
+    }
+  }
+
+  // In-memory fallback (single node)
   const record = rateLimitStore[key];
 
   // Initialize or reset if window expired
