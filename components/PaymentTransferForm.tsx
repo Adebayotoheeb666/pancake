@@ -161,8 +161,9 @@ const PaymentTransferForm = ({
           throw new Error(result.error || "Transfer failed");
         }
 
+        // preserve transfer id & provider to poll status
+        setTransferResultInfo({ id: result.transferId || result.transfer?.id || '', provider: result.provider || 'dwolla' });
         form.reset();
-        router.push("/");
       } else if (data.transferType === "provider") {
         // Provider transfer flow via server
         const response = await fetch("/api/transfer", {
@@ -185,8 +186,8 @@ const PaymentTransferForm = ({
           throw new Error(result.error || "Transfer failed");
         }
 
+        setTransferResultInfo({ id: result.transferId || result.transfer?.id || '', provider: result.provider || 'provider' });
         form.reset();
-        router.push("/");
       }
     } catch (error) {
       console.error("Transfer error:", error);
