@@ -54,42 +54,50 @@ async function handleTransfer(request: NextRequest) {
 
       const transfer = await createTransfer(transferParams);
 
-      if (transfer) {
-        // Store transfer status in database
-        const { data: transferRecord } = await supabaseAdmin
-          .from('transfers')
-          .insert({
-            provider: 'dwolla',
-            amount: Number(amount),
-            sender_id: senderBank.userId.$id,
-            receiver_id: receiverBank.userId.$id,
-            status: 'completed',
-            status_message: 'Transfer completed successfully',
-            reference: `dwolla-${Date.now()}`,
-          })
-          .select()
-          .single();
-
-        const transaction = {
-          name: name || 'Transfer',
-          amount: amount,
-          senderId: senderBank.userId.$id,
-          senderBankId: senderBank.$id,
-          receiverId: receiverBank.userId.$id,
-          receiverBankId: receiverBank.$id,
-          email: email,
+    if (transfer) {
+      // Store transfer status in database
+      const { data: transferRecord } = await supabaseAdmin
+        .from('transfers')
+        .insert({
           provider: 'dwolla',
-        };
+          amount: Number(amount),
+          sender_id: senderBank.userId.$id,
+          receiver_id: receiverBank.userId.$id,
+          status: 'completed',
+          status_message: 'Transfer completed successfully',
+          reference: `dwolla-${Date.now()}`,
+        })
+        .select()
+        .single();
 
-        await createTransaction(transaction);
+      const transaction = {
+        name: name || 'Transfer',
+        amount: amount,
+        senderId: senderBank.userId.$id,
+        senderBankId: senderBank.$id,
+        receiverId: receiverBank.userId.$id,
+        receiverBankId: receiverBank.$id,
+        email: email,
+        provider: 'dwolla',
+      };
 
-        return NextResponse.json({
-          success: true,
-          provider: 'dwolla',
-          transferId: transferRecord?.id,
-          message: 'Transfer completed successfully',
-        });
+      await createTransaction(transaction);
+
+      // Audit log
+      try {
+        const { logAudit } = await import('@/lib/audit');
+        await logAudit({ userId: senderBank.userId.$id, method: 'POST', path: '/api/transfer', status: 200, ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null, body: { type: 'dwolla', amount, receiverAccountId } });
+      } catch (e) {
+        console.error('Failed to write audit log', e);
       }
+
+      return NextResponse.json({
+        success: true,
+        provider: 'dwolla',
+        transferId: transferRecord?.id,
+        message: 'Transfer completed successfully',
+      });
+    }
     }
 
     // Handle African provider transfers
