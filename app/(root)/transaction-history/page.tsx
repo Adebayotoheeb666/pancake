@@ -56,7 +56,6 @@ const TransactionHistory = async ({ searchParams: { id, page }}:SearchParamProps
         <section className="flex w-full flex-col gap-6">
           <RecentTransactionsFiltered
             transactions={account?.transactions || []}
-            userId={loggedIn.$id}
           />
         </section>
       </div>
