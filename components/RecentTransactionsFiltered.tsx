@@ -7,12 +7,10 @@ import { filterTransactions } from "@/lib/utils/transaction-filter";
 
 interface RecentTransactionsFilteredProps {
   transactions: Transaction[];
-  userId?: string;
 }
 
 const RecentTransactionsFiltered = ({
   transactions,
-  userId,
 }: RecentTransactionsFilteredProps) => {
   const [filters, setFilters] = useState({
     search: "",
@@ -22,16 +20,8 @@ const RecentTransactionsFiltered = ({
   });
 
   const handleExport = () => {
-    if (!userId) {
-      // fallback: try to call export without userId (will error server-side)
-      window.location.href = `/api/transactions/export`;
-      return;
-    }
-
-    // Navigate to CSV export endpoint; browser will handle the download via Content-Disposition
-    const url = `/api/transactions/export?userId=${encodeURIComponent(userId)}`;
-    // open in same tab to trigger download
-    window.location.href = url;
+    // Call server-side export which derives the user from auth cookies
+    window.location.href = `/api/transactions/export`;
   };
 
   const filteredTransactions = useMemo(() => {
