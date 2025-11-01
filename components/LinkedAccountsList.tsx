@@ -23,6 +23,7 @@ interface LinkedAccountsListProps {
 const LinkedAccountsList = ({ userId }: LinkedAccountsListProps) => {
   const [accounts, setAccounts] = useState<LinkedAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingAccount, setEditingAccount] = useState<LinkedAccount | null>(null);
 
   const fetchAccounts = async () => {
     try {
