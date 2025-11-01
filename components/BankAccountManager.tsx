@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Trash2, Eye, EyeOff } from "lucide-react";
 import { Button } from "./ui/button";
+import { useToast } from './ToastProvider';
 
 interface BankAccountManagerProps {
   accounts: Account[];
@@ -18,6 +19,7 @@ const BankAccountManager = ({
   const [isLoading, setIsLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [visibleAccounts, setVisibleAccounts] = useState<Set<string>>(new Set());
+  const { showToast } = useToast();
 
   const toggleVisibility = (accountId: string) => {
     const newVisible = new Set(visibleAccounts);
@@ -47,13 +49,14 @@ const BankAccountManager = ({
       });
 
       if (response.ok) {
+        showToast({ type: 'success', message: `Disconnected ${accountName}` });
         onAccountRemoved?.();
       } else {
-        alert("Failed to disconnect account");
+        showToast({ type: 'error', message: 'Failed to disconnect account' });
       }
     } catch (error) {
       console.error("Error disconnecting account:", error);
-      alert("Error disconnecting account");
+      showToast({ type: 'error', message: 'Error disconnecting account' });
     } finally {
       setIsLoading(false);
     }
